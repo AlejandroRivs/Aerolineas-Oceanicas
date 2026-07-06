@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aerolíneas Oceánicas - Portal de Gestión</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        oceanic: {
+                            50: '#f4f6fa',
+                            100: '#e7ecf5',
+                            200: '#c5cfe6',
+                            300: '#94a7d0',
+                            400: '#5c7bb5',
+                            50: '#162b4e', // Primary Base Color
+                            600: '#11223e',
+                            700: '#0d1a30',
+                            800: '#091222',
+                            900: '#050a14',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- React & Babel CDN for runtime compilation (No-Build instant run) -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body {
+            background-color: #050a14;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #091222;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e3a6c;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #254a8a;
+        }
+        .glassmorphism {
+            background: rgba(22, 43, 78, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(22, 43, 78, 0.5);
+        }
+    </style>
+</head>
+<body class="text-white min-h-screen">
+    <div id="root">
+        <!-- Loader inicial -->
+        <div class="flex flex-col items-center justify-center min-h-screen space-y-4">
+            <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-blue-300 font-semibold">Cargando Aerolíneas Oceánicas...</p>
+        </div>
+    </div>
+
+    <!-- Script principal de React -->
+    <script type="text/babel" src="app.js"></script>
+</body>
+</html>

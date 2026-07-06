@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gatekeeper - Aerolíneas Oceánicas</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #0b1329;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen text-white p-4">
+    <div class="w-full max-w-md bg-[#162b4e]/80 backdrop-blur-xl border border-blue-900/60 p-8 rounded-3xl shadow-2xl relative overflow-hidden">
+        <!-- Glow effect -->
+        <div class="absolute -top-16 -left-16 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-16 -right-16 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl"></div>
+
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-600/10 text-blue-400 border border-blue-500/30 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                </svg>
+            </div>
+            <h1 class="text-2xl font-extrabold tracking-tight">Perímetro de Seguridad</h1>
+            <p class="text-xs text-blue-200 mt-2">Ingrese la contraseña perimetral global para acceder al portal.</p>
+        </div>
+
+        <form id="verify-form" class="space-y-4">
+            <div>
+                <label for="password" class="block text-xs font-semibold uppercase tracking-wider text-blue-300 mb-2">Contraseña</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    required 
+                    placeholder="••••••••" 
+                    class="w-full bg-slate-900/60 border border-blue-900/60 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-slate-500 transition duration-150"
+                />
+            </div>
+            
+            <div id="error-message" class="hidden bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs rounded-xl p-3 text-center"></div>
+
+            <button 
+                type="submit" 
+                class="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-slate-950 font-bold rounded-xl transition duration-200 shadow-lg shadow-blue-500/25 flex items-center justify-center space-x-2 text-sm"
+            >
+                <span>Acceder</span>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                </svg>
+            </button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('verify-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('error-message');
+            
+            errorDiv.classList.add('hidden');
+
+            try {
+                const response = await fetch('/api/gatekeeper/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    window.location.href = '/';
+                } else {
+                    errorDiv.textContent = data.error || 'Acceso denegado.';
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorDiv.textContent = 'Error de conexión con el servidor perimetral.';
+                errorDiv.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

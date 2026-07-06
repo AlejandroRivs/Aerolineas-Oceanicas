@@ -1,0 +1,458 @@
+const Koa = require('koa');
+const Router = require('@koa/router');
+const bodyParser = require('koa-bodyparser');
+const session = require('koa-session');
+const serve = require('koa-static');
+const path = require('path');
+const db = require('./database');
+const { processMidnightParkingCharges } = require('./parkingJob');
+
+const app = new Koa();
+const router = new Router();
+
+// Configuración de la sesión
+app.keys = ['secret-key-oceanic-2026'];
+const SESSION_CONFIG = {
+  key: 'koa.sess',
+  maxAge: 86400000,
+  autoCommit: true,
+  overwrite: true,
+  httpOnly: true,
+  signed: true,
+  rolling: false,
+  renew: false,
+};
+app.use(session(SESSION_CONFIG, app));
+app.use(bodyParser());
+
+// Middleware Gatekeeper (Protección perimetral por contraseña)
+const GATEKEEPER_PASSWORD = process.env.GATEKEEPER_PASSWORD || 'OceanoSeguro2026';
+
+async function gatekeeperMiddleware(ctx, next) {
+  // Eximir las rutas públicas de verificación perimetral
+  const publicPaths = [
+    '/api/gatekeeper/verify',
+    '/api/gatekeeper/status',
+    '/gatekeeper.html',
+    '/favicon.ico'
+  ];
+
+  if (publicPaths.includes(ctx.path) || ctx.path.startsWith('/assets/')) {
+    return await next();
+  }
+
+  if (ctx.session.gatekeeperPassed) {
+    return await next();
+  }
+
+  // Si es una petición API, devolver JSON 401
+  if (ctx.path.startsWith('/api/')) {
+    ctx.status = 401;
+    ctx.body = {
+      error: 'Acceso denegado por el Gatekeeper.',
+      code: 'GATEKEEPER_REQUIRED'
+    };
+    return;
+  }
+
+  // Si es navegación normal, redirigir a la página del Gatekeeper
+  ctx.redirect('/gatekeeper.html');
+}
+
+app.use(gatekeeperMiddleware);
+
+// --- RUTAS DEL GATEKEEPER ---
+
+// Verificar contraseña
+router.post('/api/gatekeeper/verify', async (ctx) => {
+  const { password } = ctx.request.body;
+  if (password === GATEKEEPER_PASSWORD) {
+    ctx.session.gatekeeperPassed = true;
+    ctx.status = 200;
+    ctx.body = { success: true, message: 'Acceso perimetral concedido.' };
+  } else {
+    ctx.status = 401;
+    ctx.body = { error: 'Contraseña incorrecta. Inténtelo de nuevo.' };
+  }
+});
+
+// Comprobar estado de Gatekeeper
+router.get('/api/gatekeeper/status', async (ctx) => {
+  ctx.body = {
+    passed: !!ctx.session.gatekeeperPassed
+  };
+});
+
+// --- RUTAS DE AUTENTICACIÓN ---
+
+// Login de simulación (para pruebas directas sin Google Auth)
+router.post('/api/auth/mock-login', async (ctx) => {
+  const { email } = ctx.request.body;
+  
+  // Buscar en usuarios mock predeterminados
+  const user = await db.getUsuarioByGoogleId(email === 'admin@oceanica.com' ? 'mock_google_id_4' : 
+                   email === 'gerente@oceanica.com' ? 'mock_google_id_3' :
+                   email === 'servicio@oceanica.com' ? 'mock_google_id_2' : 'mock_google_id_1');
+  
+  if (user) {
+    ctx.session.user = {
+      id: user.id,
+      email: user.email,
+      nombre: user.nombre,
+      rol: user.rol,
+      saldo: user.saldo_monedas,
+      ciudadesVisitadas: user.ciudadesVisitadas || []
+    };
+    ctx.status = 200;
+    ctx.body = { success: true, user: ctx.session.user };
+  } else {
+    ctx.status = 400;
+    ctx.body = { error: 'Usuario no encontrado.' };
+  }
+});
+
+// Autenticación de Google (Mockeado o Real según configuración de API)
+router.post('/api/auth/google', async (ctx) => {
+  const { token, email, name, picture } = ctx.request.body;
+
+  try {
+    let googleId = 'google_simulated_' + token;
+    let userEmail = email || 'usuario@gmail.com';
+    let userName = name || 'Usuario Google';
+    let userAvatar = picture || null;
+
+    // Si hay una API Key real de Google, verificaríamos con google-auth-library.
+    // Para entornos estudiantiles/pruebas, creamos o recuperamos usando los datos enviados.
+    let user = await db.getUsuarioByGoogleId(googleId);
+    let isNewUser = false;
+
+    if (!user) {
+      isNewUser = true;
+      user = await db.crearUsuario(googleId, userEmail, userName, userAvatar);
+    }
+
+    ctx.session.user = {
+      id: user.id,
+      email: user.email,
+      nombre: user.nombre,
+      rol: user.rol,
+      saldo: user.saldo_monedas,
+      ciudadesVisitadas: user.ciudadesVisitadas || []
+    };
+
+    ctx.status = 200;
+    ctx.body = {
+      success: true,
+      user: ctx.session.user,
+      isNewUser
+    };
+  } catch (error) {
+    ctx.status = 400;
+    ctx.body = { error: 'Error en la autenticación de Google.' };
+  }
+});
+
+// Cerrar sesión
+router.post('/api/auth/logout', async (ctx) => {
+  ctx.session.user = null;
+  ctx.body = { success: true };
+});
+
+// Obtener sesión actual
+router.get('/api/auth/session', async (ctx) => {
+  if (ctx.session.user) {
+    // Recargar saldo y datos actualizados de la base de datos
+    const user = await db.getUsuarioById(ctx.session.user.id);
+    if (user) {
+      ctx.session.user.saldo = user.saldo_monedas;
+      ctx.session.user.rol = user.rol;
+      ctx.session.user.ciudadesVisitadas = user.ciudadesVisitadas || [];
+    }
+    ctx.body = { loggedIn: true, user: ctx.session.user };
+  } else {
+    ctx.body = { loggedIn: false };
+  }
+});
+
+// --- RUTAS DE VUELOS ---
+
+// Listar todos los vuelos
+router.get('/api/vuelos', async (ctx) => {
+  const vuelos = await db.getVuelos();
+  ctx.body = vuelos;
+});
+
+// Buscar vuelos con Filtros Inteligentes
+router.post('/api/vuelos/buscar', async (ctx) => {
+  const { presupuesto, gusto, tiempoDisponible, soloNoVisitados } = ctx.request.body;
+  const user = ctx.session.user;
+
+  let vuelos = await db.getVuelos();
+
+  // Filtrar por presupuesto
+  if (presupuesto) {
+    vuelos = vuelos.filter(v => parseFloat(v.precio_monedas) <= parseFloat(presupuesto));
+  }
+
+  // Filtrar por destinos no visitados (Lógica requerida)
+  if (soloNoVisitados && user && user.ciudadesVisitadas) {
+    vuelos = vuelos.filter(v => !user.ciudadesVisitadas.includes(v.destino_ciudad));
+  }
+
+  // Guardar historial en MongoDB (NoSQL)
+  const searchRecord = {
+    usuario_id: user ? user.id : null,
+    filtros: { presupuesto, gusto, tiempoDisponible, soloNoVisitados },
+    resultados_obtenidos: vuelos.map(v => v.codigo_vuelo),
+    user_agent: ctx.headers['user-agent'],
+    ip_address: ctx.ip
+  };
+  await db.registrarBusqueda(searchRecord);
+
+  ctx.body = vuelos;
+});
+
+// Reservar un vuelo
+router.post('/api/vuelos/reservar', async (ctx) => {
+  const { vueloId } = ctx.request.body;
+  const user = ctx.session.user;
+
+  if (!user) {
+    ctx.status = 401;
+    ctx.body = { error: 'Inicie sesión para reservar.' };
+    return;
+  }
+
+  try {
+    const vuelo = await db.getVueloById(vueloId);
+    if (!vuelo) {
+      ctx.status = 404;
+      ctx.body = { error: 'Vuelo no encontrado.' };
+      return;
+    }
+
+    const reserva = await db.crearReserva(user.id, vuelo.id, vuelo.precio_monedas);
+    
+    // Actualizar datos de sesión local
+    const userUpdated = await db.getUsuarioById(user.id);
+    ctx.session.user.saldo = userUpdated.saldo_monedas;
+    ctx.session.user.ciudadesVisitadas = userUpdated.ciudadesVisitadas || [];
+
+    ctx.body = { success: true, reserva, nuevoSaldo: userUpdated.saldo_monedas };
+  } catch (error) {
+    ctx.status = 400;
+    ctx.body = { error: error.message };
+  }
+});
+
+// --- RUTAS DE APARCAMIENTO (PARKING) ---
+
+// Obtener ocupación del parking
+router.get('/api/parking/slots', async (ctx) => {
+  const slots = await db.getParkingSlots();
+  const tarifa = await db.getTarifaParking();
+  ctx.body = { slots, tarifa };
+});
+
+// Modificar tarifa del parking (Rol: Gerente o Administrador)
+router.post('/api/parking/tarifa', async (ctx) => {
+  const { tarifa } = ctx.request.body;
+  const user = ctx.session.user;
+
+  if (!user || (user.rol !== 'Gerente' && user.rol !== 'Administrador')) {
+    ctx.status = 403;
+    ctx.body = { error: 'Acceso denegado. Se requiere rol de Gerente o Administrador.' };
+    return;
+  }
+
+  await db.actualizarTarifaParking(parseFloat(tarifa));
+  ctx.body = { success: true, tarifa: parseFloat(tarifa) };
+});
+
+// QR de Entrada
+router.post('/api/parking/qr-entrada', async (ctx) => {
+  const { plazaId } = ctx.request.body;
+  const user = ctx.session.user;
+
+  if (!user) {
+    ctx.status = 401;
+    ctx.body = { error: 'Inicie sesión para usar el estacionamiento.' };
+    return;
+  }
+
+  try {
+    const slot = await db.qrEntrada(user.id, plazaId);
+    ctx.body = { success: true, slot };
+  } catch (error) {
+    ctx.status = 400;
+    ctx.body = { error: error.message };
+  }
+});
+
+// QR de Plaza (Confirmación física en lugar de estacionamiento)
+router.post('/api/parking/qr-plaza', async (ctx) => {
+  const { plazaId } = ctx.request.body;
+  const user = ctx.session.user;
+
+  if (!user) {
+    ctx.status = 401;
+    ctx.body = { error: 'Inicie sesión.' };
+    return;
+  }
+
+  try {
+    const res = await db.qrPlaza(user.id, plazaId);
+    ctx.body = res;
+  } catch (error) {
+    ctx.status = 400;
+    ctx.body = { error: error.message };
+  }
+});
+
+// QR de Salida (Liberación si el pago está exitoso)
+router.post('/api/parking/qr-salida', async (ctx) => {
+  const { plazaId } = ctx.request.body;
+  const user = ctx.session.user;
+
+  if (!user) {
+    ctx.status = 401;
+    ctx.body = { error: 'Inicie sesión.' };
+    return;
+  }
+
+  try {
+    const res = await db.qrSalida(user.id, plazaId);
+    ctx.body = res;
+  } catch (error) {
+    ctx.status = 400;
+    ctx.body = { error: error.message };
+  }
+});
+
+// Simulación de Medianoche (00:00 AM)
+router.post('/api/parking/simulate-midnight', async (ctx) => {
+  try {
+    const res = await processMidnightParkingCharges();
+    ctx.body = res;
+  } catch (error) {
+    ctx.status = 500;
+    ctx.body = { error: 'Error simulando cobros de medianoche.' };
+  }
+});
+
+// --- RUTAS DE INCIDENCIAS (ESCALACIÓN - RBAC) ---
+
+// Listar incidencias
+router.get('/api/incidencias', async (ctx) => {
+  const escalaciones = await db.getEscalaciones();
+  ctx.body = escalaciones;
+});
+
+// Crear incidencia
+router.post('/api/incidencias/crear', async (ctx) => {
+  const { descripcion } = ctx.request.body;
+  const user = ctx.session.user;
+
+  if (!user) {
+    ctx.status = 401;
+    ctx.body = { error: 'Inicie sesión.' };
+    return;
+  }
+
+  const ticketCodigo = 'INC-2026-' + Math.floor(1000 + Math.random() * 9000);
+  const incidencia = {
+    ticket_codigo: ticketCodigo,
+    cliente_id: user.id,
+    fecha_creacion: new Date().toISOString(),
+    descripcion_problema: descripcion,
+    estado_actual: 'Abierto',
+    nivel_prioridad: 'Media',
+    historial_estados: [
+      {
+        estado: 'Abierto',
+        asignado_a_rol: 'Servicio al Cliente',
+        usuario_nombre: user.nombre,
+        comentario: 'Reporte inicial de incidencia por el cliente.',
+        fecha: new Date().toISOString()
+      }
+    ]
+  };
+
+  await db.registrarEscalacion(incidencia);
+  ctx.body = { success: true, incidencia };
+});
+
+// Escalar incidencia (RBAC Matrix)
+router.post('/api/incidencias/escalar', async (ctx) => {
+  const { ticketCodigo, comentario } = ctx.request.body;
+  const user = ctx.session.user;
+
+  if (!user) {
+    ctx.status = 401;
+    ctx.body = { error: 'Inicie sesión.' };
+    return;
+  }
+
+  const escalaciones = await db.getEscalaciones();
+  const ticket = escalaciones.find(t => t.ticket_codigo === ticketCodigo);
+
+  if (!ticket) {
+    ctx.status = 404;
+    ctx.body = { error: 'Incidencia no encontrada.' };
+    return;
+  }
+
+  // Matriz de escalación del negocio
+  let nuevoEstado = '';
+  let nuevoRolAsignado = '';
+
+  if (user.rol === 'Servicio al Cliente') {
+    nuevoEstado = 'Escalado a Gerente';
+    nuevoRolAsignado = 'Gerente';
+  } else if (user.rol === 'Gerente') {
+    nuevoEstado = 'Escalado a Administrador';
+    nuevoRolAsignado = 'Administrador';
+  } else {
+    ctx.status = 403;
+    ctx.body = { error: 'Su rol no tiene privilegios para realizar esta escalación.' };
+    return;
+  }
+
+  await db.actualizarEstadoEscalacion(ticketCodigo, nuevoEstado, nuevoRolAsignado, user.nombre, comentario);
+  ctx.body = { success: true, nuevoEstado };
+});
+
+// Modificar Rol (Solo Administrador)
+router.post('/api/usuarios/rol', async (ctx) => {
+  const { usuarioId, nuevoRol } = ctx.request.body;
+  const user = ctx.session.user;
+
+  if (!user || user.rol !== 'Administrador') {
+    ctx.status = 403;
+    ctx.body = { error: 'Solo el Administrador puede cambiar los roles de los usuarios.' };
+    return;
+  }
+
+  const updatedUser = await db.actualizarRol(usuarioId, nuevoRol);
+  ctx.body = { success: true, usuario: updatedUser };
+});
+
+app.use(router.routes()).use(router.allowedMethods());
+
+// Servir archivos estáticos del frontend
+app.use(serve(path.join(__dirname, 'public')));
+
+// Fallback a index.html para soportar navegación SPA
+app.use(async (ctx, next) => {
+  if (ctx.status === 404 && !ctx.path.startsWith('/api/')) {
+    ctx.type = 'html';
+    ctx.body = require('fs').createReadStream(path.join(__dirname, 'public', 'index.html'));
+  } else {
+    await next();
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor de Aerolíneas Oceánicas corriendo en http://localhost:${PORT}`);
+});
