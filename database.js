@@ -99,6 +99,25 @@ const db = {
     return res.rows[0] || null;
   },
 
+  async crearTransaccion(usuarioId, tipo, monto, descripcion) {
+    if (useMock) {
+      mockDb.transacciones.push({
+        id: mockDb.transacciones.length + 1,
+        usuario_id: Number(usuarioId),
+        tipo,
+        monto,
+        descripcion,
+        fecha_transaccion: new Date().toISOString()
+      });
+      return;
+    }
+    await pgPool.query(
+      `INSERT INTO transacciones (usuario_id, tipo, monto, descripcion)
+       VALUES ($1, $2, $3, $4)`,
+      [usuarioId, tipo, monto, descripcion]
+    );
+  },
+
   async crearUsuario(googleId, email, nombre, avatar) {
     if (useMock) {
       const nuevoId = mockDb.usuarios.length + 1;

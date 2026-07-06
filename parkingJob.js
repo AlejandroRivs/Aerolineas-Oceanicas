@@ -15,11 +15,12 @@ async function processMidnightParkingCharges() {
             await db.actualizarSaldo(user.id, nuevoSaldo);
 
             // Registrar transacción en la base de datos
-            // Dependiendo del tipo de base de datos o mock
-            if (db.useMock || !process.env.DATABASE_URL) {
-              const mockDb = require('./database');
-              // En mock, database.js maneja la lista de transacciones interna
-            }
+            await db.crearTransaccion(
+              user.id,
+              'Reserva Parking',
+              -tarifa,
+              `Cargo automático diario - Plaza ${slot.identificador_plaza}`
+            );
             console.log(`Cargo de ${tarifa} MO aplicado con éxito al usuario ${user.nombre} por plaza ${slot.identificador_plaza}.`);
           } else {
             console.warn(`Usuario ${user.nombre} tiene saldo insuficiente (${user.saldo_monedas} MO) para pagar la tarifa diaria de la plaza ${slot.identificador_plaza}.`);
