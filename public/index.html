@@ -14,16 +14,16 @@
                 extend: {
                     colors: {
                         oceanic: {
-                            50: '#f4f6fa',
-                            100: '#e7ecf5',
-                            200: '#c5cfe6',
-                            300: '#94a7d0',
-                            400: '#5c7bb5',
-                            50: '#162b4e', // Primary Base Color
-                            600: '#11223e',
-                            700: '#0d1a30',
-                            800: '#091222',
-                            900: '#050a14',
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#162b4e', // Primary Base Color
+                            600: '#0f1f3a',
+                            700: '#0b162a',
+                            800: '#070e1b',
+                            900: '#04070e',
                         }
                     },
                     fontFamily: {
@@ -35,42 +35,37 @@
     </script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- React & Babel CDN for runtime compilation (No-Build instant run) -->
+    <!-- React & Babel CDN for runtime compilation -->
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
         body {
-            background-color: #050a14;
+            background-color: #f1f5f9; /* Soft light gray */
+            color: #1e293b;
         }
         /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #091222;
+            background: #f1f5f9;
         }
         ::-webkit-scrollbar-thumb {
-            background: #1e3a6c;
+            background: #cbd5e1;
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #254a8a;
-        }
-        .glassmorphism {
-            background: rgba(22, 43, 78, 0.4);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(22, 43, 78, 0.5);
+            background: #94a3b8;
         }
     </style>
 </head>
-<body class="text-white min-h-screen">
+<body class="min-h-screen">
     <div id="root">
         <!-- Loader inicial -->
         <div class="flex flex-col items-center justify-center min-h-screen space-y-4">
-            <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <p class="text-blue-300 font-semibold">Cargando Aerolíneas Oceánicas...</p>
+            <div class="w-12 h-12 border-4 border-[#162b4e] border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-[#162b4e] font-semibold font-sans">Cargando Aerolíneas Oceánicas...</p>
         </div>
     </div>
 
