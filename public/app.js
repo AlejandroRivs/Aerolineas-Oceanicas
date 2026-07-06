@@ -1,93 +1,100 @@
 const { useState, useEffect } = React;
 
-// Mapa de colores e información de países
+// Mapa de colores e información de países con coordenadas SVG realistas
 const PAISES_DATA = {
   "México": {
     color: "#059669",
     destinos: [
-      { nombre: "Cancún", categoria: "Playa", desc: "Playas caribeñas de agua turquesa." },
-      { nombre: "Teotihuacán", categoria: "Cultura", desc: "Pirámides ancestrales del Sol y la Luna." },
-      { nombre: "San Miguel de Allende", categoria: "Cultura", desc: "Pueblo mágico con hermosa arquitectura colonial." }
+      { nombre: "Cancún", ciudad: "Cancún", categoria: "Playa", desc: "Playas caribeñas de agua turquesa." },
+      { nombre: "Teotihuacán", ciudad: "Bogotá", categoria: "Cultura", desc: "Pirámides ancestrales del Sol y la Luna." },
+      { nombre: "San Miguel de Allende", ciudad: "Cancún", categoria: "Cultura", desc: "Pueblo mágico con hermosa arquitectura colonial." }
     ],
     vuelos: [
       { id: 601, codigo_vuelo: 'OC-601', origen: 'San José, CR', destino_pais: 'México', destino_ciudad: 'Cancún', fecha_salida: '2026-07-11T12:00:00Z', fecha_llegada: '2026-07-11T14:30:00Z', duracion: 150, precio: 1100 }
     ],
-    path: "M 100 100 L 160 120 L 150 160 L 80 140 Z" // Coordenadas simplificadas para dibujo SVG
+    // Trazado de mapa realista de México
+    path: "M 30,120 L 70,80 L 130,100 L 180,120 L 200,150 L 175,170 C 160,165 140,160 120,155 L 95,170 C 85,175 70,160 60,140 Z"
   },
   "Colombia": {
     color: "#eab308",
     destinos: [
-      { nombre: "Santuario de Las Lajas", categoria: "Montaña", desc: "Una joya arquitectónica construida sobre un cañón." },
-      { nombre: "Parque Nacional Natural Tayrona", categoria: "Playa", desc: "Bahías de arena blanca rodeadas de selva tropical." },
-      { nombre: "Catedral de Sal de Zipaquirá", categoria: "Cultura", desc: "Una iglesia subterránea tallada completamente en sal." }
+      { nombre: "Santuario de Las Lajas", ciudad: "Bogotá", categoria: "Montaña", desc: "Una joya arquitectónica construida sobre un cañón." },
+      { nombre: "Parque Nacional Natural Tayrona", ciudad: "Bogotá", categoria: "Playa", desc: "Bahías de arena blanca rodeadas de selva tropical." },
+      { nombre: "Catedral de Sal de Zipaquirá", ciudad: "Bogotá", categoria: "Cultura", desc: "Una iglesia subterránea tallada completamente en sal." }
     ],
     vuelos: [
       { id: 101, codigo_vuelo: 'OC-101', origen: 'Ciudad de México, MX', destino_pais: 'Colombia', destino_ciudad: 'Bogotá', fecha_salida: '2026-07-06T08:00:00Z', fecha_llegada: '2026-07-06T12:30:00Z', duracion: 270, precio: 1200 },
       { id: 301, codigo_vuelo: 'OC-301', origen: 'Buenos Aires, AR', destino_pais: 'Colombia', destino_ciudad: 'Medellín', fecha_salida: '2026-07-08T07:00:00Z', fecha_llegada: '2026-07-08T12:30:00Z', duracion: 390, precio: 2100 }
     ],
-    path: "M 170 200 L 210 220 L 200 260 L 160 250 Z"
+    // Trazado de mapa realista de Colombia
+    path: "M 175,225 C 190,210 205,215 215,220 L 230,240 C 220,255 210,265 195,265 L 180,250 Z"
   },
   "Chile": {
     color: "#ef4444",
     destinos: [
-      { nombre: "Torres del Paine", categoria: "Montaña", desc: "Imponentes montañas y glaciares en la Patagonia chilena." },
-      { nombre: "Desierto de Atacama", categoria: "Montaña", desc: "El desierto no polar más árido de la Tierra." },
-      { nombre: "Isla de Pascua", categoria: "Cultura", desc: "Famosa por sus enigmáticas estatuas de piedra Moái." }
+      { nombre: "Torres del Paine", ciudad: "Santiago", categoria: "Montaña", desc: "Imponentes montañas y glaciares en la Patagonia chilena." },
+      { nombre: "Desierto de Atacama", ciudad: "Santiago", categoria: "Montaña", desc: "El desierto no polar más árido de la Tierra." },
+      { nombre: "Isla de Pascua", ciudad: "Santiago", categoria: "Cultura", desc: "Famosa por sus enigmáticas estatuas de piedra Moái." }
     ],
     vuelos: [
       { id: 102, codigo_vuelo: 'OC-102', origen: 'Ciudad de México, MX', destino_pais: 'Chile', destino_ciudad: 'Santiago', fecha_salida: '2026-07-06T14:00:00Z', fecha_llegada: '2026-07-06T22:30:00Z', duracion: 510, precio: 2400 },
       { id: 401, codigo_vuelo: 'OC-401', origen: 'Río de Janeiro, BR', destino_pais: 'Chile', destino_ciudad: 'Santiago', fecha_salida: '2026-07-09T15:00:00Z', fecha_llegada: '2026-07-09T19:30:00Z', duracion: 330, precio: 1900 }
     ],
-    path: "M 170 380 L 180 380 L 190 540 L 175 540 Z"
+    // Trazado de mapa realista de Chile (delgada faja costera)
+    path: "M 180,380 L 190,380 L 188,440 L 182,500 L 175,560 L 168,560 L 174,480 Z"
   },
   "Perú": {
     color: "#a855f7",
     destinos: [
-      { nombre: "Machu Picchu", categoria: "Montaña", desc: "La legendaria ciudadela inca en las alturas de los Andes." },
-      { nombre: "Líneas de Nazca", categoria: "Cultura", desc: "Geoglifos antiguos grabados en las arenas del desierto." },
-      { nombre: "Lago Titicaca", categoria: "Montaña", desc: "El lago navegable más alto del mundo." }
+      { nombre: "Machu Picchu", ciudad: "Cusco", categoria: "Montaña", desc: "La legendaria ciudadela inca en las alturas de los Andes." },
+      { nombre: "Líneas de Nazca", ciudad: "Lima", categoria: "Cultura", desc: "Geoglifos antiguos grabados en las arenas del desierto." },
+      { nombre: "Lago Titicaca", ciudad: "Cusco", categoria: "Montaña", desc: "El lago navegable más alto del mundo." }
     ],
     vuelos: [
       { id: 103, codigo_vuelo: 'OC-103', origen: 'Ciudad de México, MX', destino_pais: 'Perú', destino_ciudad: 'Lima', fecha_salida: '2026-07-06T09:30:00Z', fecha_llegada: '2026-07-06T15:45:00Z', duracion: 375, precio: 1800 },
       { id: 302, codigo_vuelo: 'OC-302', origen: 'Santiago, CL', destino_pais: 'Perú', destino_ciudad: 'Cusco', fecha_salida: '2026-07-08T13:00:00Z', fecha_llegada: '2026-07-08T16:30:00Z', duracion: 270, precio: 1600 }
     ],
-    path: "M 155 265 L 195 285 L 175 360 L 135 320 Z"
+    // Trazado de mapa realista de Perú
+    path: "M 160,250 L 185,270 L 205,290 C 190,310 185,330 170,345 L 150,305 C 155,285 160,265 160,250 Z"
   },
   "Brasil": {
     color: "#3b82f6",
     destinos: [
-      { nombre: "Cristo Redentor", categoria: "Cultura", desc: "Estatua icónica que corona el cerro del Corcovado." },
-      { nombre: "Cataratas del Iguazú", categoria: "Montaña", desc: "Uno de los sistemas de cascadas más grandes del mundo." },
-      { nombre: "Playa de Copacabana", categoria: "Playa", desc: "Famosa playa en forma de media luna en Río de Janeiro." }
+      { nombre: "Cristo Redentor", ciudad: "Río de Janeiro", categoria: "Cultura", desc: "Estatua icónica que corona el cerro del Corcovado." },
+      { nombre: "Cataratas del Iguazú", ciudad: "Río de Janeiro", categoria: "Montaña", desc: "Uno de los sistemas de cascadas más grandes del mundo." },
+      { nombre: "Playa de Copacabana", ciudad: "Río de Janeiro", categoria: "Playa", desc: "Famosa playa en forma de media luna en Río de Janeiro." }
     ],
     vuelos: [
       { id: 201, codigo_vuelo: 'OC-201', origen: 'Bogotá, CO', destino_pais: 'Brasil', destino_ciudad: 'Río de Janeiro', fecha_salida: '2026-07-07T10:00:00Z', fecha_llegada: '2026-07-07T18:30:00Z', duracion: 390, precio: 2200 }
     ],
-    path: "M 220 220 L 290 240 L 280 340 L 210 320 Z"
+    // Trazado de mapa realista de Brasil
+    path: "M 220,220 C 245,215 285,225 320,245 C 330,270 335,290 310,335 C 285,370 255,360 230,330 C 210,310 212,285 220,220 Z"
   },
   "Argentina": {
     color: "#06b6d4",
     destinos: [
-      { nombre: "Glaciar Perito Moreno", categoria: "Montaña", desc: "Impresionante pared de hielo en la Patagonia." },
-      { nombre: "Bariloche", categoria: "Montaña", desc: "Lagos cristalinos y montañas ideales para esquí." },
-      { nombre: "Cataratas del Iguazú", categoria: "Montaña", desc: "Maravillosa vista de las cataratas compartidas con Brasil." }
+      { nombre: "Glaciar Perito Moreno", ciudad: "Buenos Aires", categoria: "Montaña", desc: "Impresionante pared de hielo en la Patagonia." },
+      { nombre: "Bariloche", ciudad: "Buenos Aires", categoria: "Montaña", desc: "Lagos cristalinos y montañas ideales para esquí." },
+      { nombre: "Cataratas del Iguazú", ciudad: "Buenos Aires", categoria: "Montaña", desc: "Maravillosa vista de las cataratas compartidas con Brasil." }
     ],
     vuelos: [
       { id: 202, codigo_vuelo: 'OC-202', origen: 'Lima, PE', destino_pais: 'Argentina', destino_ciudad: 'Buenos Aires', fecha_salida: '2026-07-07T11:00:00Z', fecha_llegada: '2026-07-07T16:30:00Z', duracion: 270, precio: 1500 }
     ],
-    path: "M 188 385 L 218 385 L 220 520 L 192 520 Z"
+    // Trazado de mapa realista de Argentina
+    path: "M 190,380 L 225,380 L 220,440 L 200,520 L 180,560 L 178,500 L 188,440 Z"
   },
   "Costa Rica": {
     color: "#f97316",
     destinos: [
-      { nombre: "Volcán Arenal", categoria: "Montaña", desc: "Volcán activo rodeado de aguas termales." },
-      { nombre: "Parque Manuel Antonio", categoria: "Playa", desc: "Playas paradisíacas con abundancia de perezosos y monos." },
-      { nombre: "Monteverde", categoria: "Montaña", desc: "Reserva de bosque nuboso y tirolesas gigantes." }
+      { nombre: "Volcán Arenal", ciudad: "San José", categoria: "Montaña", desc: "Volcán activo rodeado de aguas termales." },
+      { nombre: "Parque Manuel Antonio", ciudad: "San José", categoria: "Playa", desc: "Playas paradisíacas con abundancia de perezosos y monos." },
+      { nombre: "Monteverde", ciudad: "San José", categoria: "Montaña", desc: "Reserva de bosque nuboso y tirolesas gigantes." }
     ],
     vuelos: [
       { id: 501, codigo_vuelo: 'OC-501', origen: 'Bogotá, CO', destino_pais: 'Costa Rica', destino_ciudad: 'San José', fecha_salida: '2026-07-10T09:00:00Z', fecha_llegada: '2026-07-10T11:15:00Z', duracion: 135, precio: 950 }
     ],
-    path: "M 130 170 L 150 175 L 145 190 L 125 185 Z"
+    // Trazado de mapa realista de Costa Rica (Centroamérica)
+    path: "M 135,175 L 165,185 L 160,200 L 140,215 L 130,195 Z"
   }
 };
 
@@ -100,6 +107,7 @@ function App() {
   const [vuelos, setVuelos] = useState([]);
   const [hoveredCountry, setHoveredCountry] = useState(null);
   const [selectedCountry, setSelectedCountry] = useState(null);
+  const [selectedDestination, setSelectedDestination] = useState(null); // Nuevo estado de filtro por destino interactivo
   const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
   const [busquedaRealizada, setBusquedaRealizada] = useState(false);
   const [filtroPresupuesto, setFiltroPresupuesto] = useState("");
@@ -163,7 +171,6 @@ function App() {
       setParkingSlots(data.slots || []);
       setTarifaParking(data.tarifa || 20);
       
-      // Buscar si el usuario actual tiene una plaza ocupada
       if (user) {
         const mySlot = (data.slots || []).find(s => s.usuario_id === user.id && s.estado === 'Ocupado');
         setMyOcupation(mySlot || null);
@@ -211,7 +218,6 @@ function App() {
     }
   };
 
-  // Login simulando Google Auth API
   const handleGoogleLoginSimulated = async () => {
     const tokenSimulado = Math.random().toString(36).substring(2);
     const email = prompt("Ingrese su correo de Google simulado:", "viajero@gmail.com");
@@ -469,6 +475,26 @@ function App() {
       porcentaje: ratio.toFixed(0),
       advertencia: tieneAdvertencia
     };
+  };
+
+  // Filtrado de vuelos dentro del Modal por Destino específico
+  const getVuelosParaMostrarEnModal = () => {
+    if (!selectedCountry) return [];
+    
+    // Filtrar vuelos que coincidan con el país
+    let filtered = vuelos.filter(v => v.destino_pais === selectedCountry);
+
+    // Si hay un destino turístico específico seleccionado, filtrar por la ciudad de ese destino
+    if (selectedDestination) {
+      const destObj = PAISES_DATA[selectedCountry]?.destinos.find(d => d.nombre === selectedDestination);
+      if (destObj) {
+        filtered = filtered.filter(v => 
+          v.destino_ciudad.toLowerCase().includes(destObj.ciudad.toLowerCase()) ||
+          destObj.ciudad.toLowerCase().includes(v.destino_ciudad.toLowerCase())
+        );
+      }
+    }
+    return filtered;
   };
 
   if (loading) {
@@ -788,7 +814,7 @@ function App() {
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                   <div className="bg-white border border-slate-200 w-full max-w-2xl p-8 rounded-3xl relative shadow-2xl space-y-6">
                     <button 
-                      onClick={() => setSelectedCountry(null)}
+                      onClick={() => { setSelectedCountry(null); setSelectedDestination(null); }}
                       className="absolute top-4 right-4 text-slate-400 hover:text-slate-800 text-2xl font-bold"
                     >
                       &times;
@@ -796,26 +822,40 @@ function App() {
                     
                     <div>
                       <h3 className="text-2xl font-extrabold tracking-tight text-[#162b4e]">{selectedCountry}</h3>
-                      <p className="text-xs text-slate-500">Guía de Destinos y Vuelos Disponibles</p>
+                      <p className="text-xs text-slate-500">Haz clic en un destino turístico para filtrar los vuelos directos correspondientes.</p>
                     </div>
 
                     <div className="space-y-3">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Lugares Más Turísticos</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Lugares Más Turísticos (Haz clic para seleccionar)</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        {PAISES_DATA[selectedCountry]?.destinos.map((dest, idx) => (
-                          <div key={idx} className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-1">
-                            <span className="text-[10px] uppercase font-bold text-blue-600">{dest.categoria}</span>
-                            <h5 className="font-bold text-sm text-slate-800">{dest.nombre}</h5>
-                            <p className="text-[10px] text-slate-500 leading-normal">{dest.desc}</p>
-                          </div>
-                        ))}
+                        {PAISES_DATA[selectedCountry]?.destinos.map((dest, idx) => {
+                          const isSelected = selectedDestination === dest.nombre;
+                          return (
+                            <div 
+                              key={idx} 
+                              onClick={() => setSelectedDestination(isSelected ? null : dest.nombre)}
+                              className={`p-4 rounded-xl space-y-1 cursor-pointer transition-all duration-150 border ${
+                                isSelected 
+                                  ? 'bg-blue-50 border-blue-500 shadow-md ring-2 ring-blue-500/20' 
+                                  : 'bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
+                              }`}
+                            >
+                              <span className="text-[10px] uppercase font-bold text-blue-600">{dest.categoria}</span>
+                              <h5 className="font-bold text-sm text-slate-800">{dest.nombre}</h5>
+                              <p className="text-[10px] text-slate-500 leading-normal">{dest.desc}</p>
+                              {isSelected && <span className="text-[9px] text-blue-600 font-bold block mt-1">✓ Destino Seleccionado</span>}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
 
                     <div className="space-y-3">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Vuelos Disponibles a {selectedCountry}</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                        {selectedDestination ? `Vuelos Disponibles a ${selectedDestination}` : `Todos los Vuelos a ${selectedCountry}`}
+                      </h4>
                       <div className="space-y-3 max-h-[180px] overflow-y-auto pr-1">
-                        {vuelos.filter(v => v.destino_pais === selectedCountry).map((v) => {
+                        {getVuelosParaMostrarEnModal().map((v) => {
                           const stay = getStayDetails(v.duracion_vuelo_minutos || v.duracion);
                           return (
                             <div key={v.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
@@ -843,8 +883,8 @@ function App() {
                             </div>
                           );
                         })}
-                        {vuelos.filter(v => v.destino_pais === selectedCountry).length === 0 && (
-                          <p className="text-xs text-slate-400">No hay vuelos programados para esta semana a este país.</p>
+                        {getVuelosParaMostrarEnModal().length === 0 && (
+                          <p className="text-xs text-slate-400">No hay vuelos programados específicos para este destino en la ventana temporal.</p>
                         )}
                       </div>
                     </div>
@@ -1028,7 +1068,7 @@ function App() {
                   )}
                 </div>
 
-                {/* Bandeja de Casos (RBAC Matrix) */}
+                {/* Bandeja de Casos */}
                 <div className="xl:col-span-2 bg-white border border-slate-200 p-6 rounded-3xl shadow-md space-y-6">
                   <div>
                     <h3 className="text-lg font-bold text-[#162b4e]">Bandeja de Incidencias Operativas</h3>
@@ -1059,7 +1099,6 @@ function App() {
                             {ticket.descripcion_problema}
                           </p>
 
-                          {/* Historial de Escalación */}
                           <div className="space-y-2 border-t border-slate-200/60 pt-3">
                             <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Historial de Trazabilidad</span>
                             {ticket.historial_estados?.map((log, idx) => (
