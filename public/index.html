@@ -6,9 +6,6 @@
     <title>Aerolíneas Oceánicas - Portal de Gestión</title>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    <!-- Leaflet CSS & JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -42,17 +39,19 @@
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- D3.js for geographic maps -->
+    <script src="https://unpkg.com/d3@7"></script>
     <style>
         body {
-            background-color: #f1f5f9; /* Soft light gray */
-            color: #1e293b;
+            background-color: #f8fafc; /* Whiter, cleaner slate-50 background */
+            color: #0f172a;
         }
         /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #f1f5f9;
+            background: #f8fafc;
         }
         ::-webkit-scrollbar-thumb {
             background: #cbd5e1;
@@ -60,76 +59,6 @@
         }
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
-        }
-
-        /* Leaflet Customizations */
-        .leaflet-container {
-            font-family: 'Outfit', sans-serif !important;
-            background: #0b162a !important; /* Premium dark background matching oceanic theme */
-        }
-        
-        /* Custom Glowing/Pulsing Markers */
-        .custom-marker {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .marker-pin {
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background-color: #06b6d4; /* cyan */
-            border: 2px solid #ffffff;
-            box-shadow: 0 0 10px #06b6d4;
-            position: relative;
-        }
-        .marker-pin::after {
-            content: '';
-            position: absolute;
-            top: -6px;
-            left: -6px;
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            border: 2px solid #06b6d4;
-            animation: pulse-ring 1.5s cubic-bezier(0.215, 0.610, 0.355, 1) infinite;
-            opacity: 0;
-        }
-        .marker-pin.origin {
-            background-color: #f97316; /* orange */
-            box-shadow: 0 0 10px #f97316;
-        }
-        .marker-pin.origin::after {
-            border-color: #f97316;
-        }
-
-        @keyframes pulse-ring {
-            0% {
-                transform: scale(0.5);
-                opacity: 0.8;
-            }
-            100% {
-                transform: scale(1.5);
-                opacity: 0;
-            }
-        }
-
-        /* Modernized Leaflet Popups */
-        .leaflet-popup-content-wrapper {
-            background: #0f1f3a !important; /* oceanic-600 */
-            color: #f8fafc !important; /* slate-50 */
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px !important;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3) !important;
-            padding: 4px;
-        }
-        .leaflet-popup-tip {
-            background: #0f1f3a !important;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .leaflet-popup-content {
-            margin: 12px 16px !important;
-            line-height: 1.5;
         }
     </style>
 </head>
@@ -142,6 +71,10 @@
         </div>
     </div>
 
+    <!-- Scripts modulares -->
+    <script type="text/babel" src="paises_data.js"></script>
+    <script type="text/babel" src="map_components.js"></script>
+    <script type="text/babel" src="mapa_interactivo.js"></script>
     <!-- Script principal de React -->
     <script type="text/babel" src="app.js"></script>
 </body>

@@ -1,210 +1,5 @@
 const { useState, useEffect, useRef } = React;
-
-const COORDENADAS_CIUDADES = {
-  "Cancún": [21.1619, -86.8515],
-  "Ciudad de México": [19.4326, -99.1332],
-  "Guadalajara": [20.6597, -103.3496],
-  "Los Cabos": [22.8905, -109.9167],
-  "Oaxaca": [17.0732, -96.7266],
-  "Guanajuato": [21.019, -101.2574],
-  "Playa del Carmen": [20.6296, -87.0739],
-  "Mérida": [8.5983, -71.1449],
-  "Monterrey": [25.6866, -100.3161],
-  "San Pedro de Atacama": [-22.911, -68.1991],
-  "Valparaíso": [-33.0472, -71.6127],
-  "San Alfonso del Mar": [-33.3512, -71.6528],
-  "Pucón": [-39.273, -71.9774],
-  "Santiago": [-33.4489, -70.6693],
-  "Torres del Paine": [-50.9423, -72.9344],
-  "Bogotá": [4.711, -74.0721],
-  "Cali": [3.4516, -76.532],
-  "Leticia": [-4.2153, -69.9406],
-  "Medellín": [6.2442, -75.5812],
-  "Cartagena": [10.391, -75.4794],
-  "Santa Marta": [11.2408, -74.199],
-  "San Andrés": [12.5847, -81.7006],
-  "Eje Cafetero": [4.6259, -75.7515],
-  "Manaos": [-3.119, -60.0217],
-  "Búzios": [-22.7558, -41.8878],
-  "Río de Janeiro": [-22.9068, -43.1729],
-  "Foz do Iguaçu": [-25.5478, -54.5881],
-  "Fernando de Noronha": [-3.8548, -32.4234],
-  "Natal": [-5.7945, -35.211],
-  "Lençóis Maranhenses": [-2.4855, -43.1206],
-  "Ciudad del Este": [-25.5097, -54.6111],
-  "Antigua Guatemala": [14.5611, -90.7344],
-  "Flores": [16.93, -89.89],
-  "Lago Atitlán": [14.6907, -91.2017],
-  "Semuc Champey": [15.5562, -89.9602],
-  "La Libertad": [13.4883, -89.3217],
-  "Santa Ana": [13.9942, -89.5597],
-  "Suchitoto": [13.9372, -89.0275],
-  "Ruta de las Flores": [13.8441, -89.8242],
-  "Copán Ruinas": [14.8394, -89.1558],
-  "Roatán": [16.3262, -86.5381],
-  "Tela": [15.7744, -87.4522],
-  "Útila": [16.1004, -86.8973],
-  "Quito": [-0.1807, -78.4678],
-  "Islas Galápagos": [-0.8293, -90.9821],
-  "Cuenca": [-2.9001, -79.0059],
-  "Montañita": [-1.8278, -80.7525],
-  "Tena": [-0.9938, -77.8129],
-  "León": [12.4379, -86.878],
-  "Granada": [12.1264, -85.9575],
-  "San Juan del Sur": [11.2529, -85.8703],
-  "Isla de Ometepe": [11.5034, -85.6033],
-  "Mendoza": [-32.8895, -68.8458],
-  "Salta": [-24.7821, -65.4232],
-  "Bariloche": [-41.1335, -71.3103],
-  "Ushuaia": [-54.8019, -68.303],
-  "Puerto Madryn": [-42.7692, -65.0385],
-  "Buenos Aires": [-34.6037, -58.3816],
-  "El Calafate": [-50.3381, -72.2647],
-  "Copacabana": [-16.1667, -69.0833],
-  "Sucre": [-19.0353, -65.2627],
-  "Uyuni": [-20.4597, -66.825],
-  "La Paz": [-16.4897, -68.1193],
-  "Toro Toro": [-18.1333, -65.7667],
-  "Asunción": [-25.2637, -57.5759],
-  "Encarnación": [-27.3306, -55.8667],
-  "Colonia del Sacramento": [-34.4698, -57.8436],
-  "Cabo Polonio": [-34.3986, -53.8139],
-  "Punta del Este": [-34.9631, -54.944],
-  "Punta del Diablo": [-34.0436, -53.5398],
-  "San Blas": [9.5735, -78.932],
-  "Bocas del Toro": [9.3403, -82.2423],
-  "Chiriquí": [8.4333, -82.4333],
-  "Ciudad de Panamá": [8.9824, -79.5199],
-  "Portobelo": [9.5539, -79.6547],
-  "Jacó": [9.615, -84.6297],
-  "Manuel Antonio": [9.3888, -84.1481],
-  "La Fortuna": [10.4678, -84.6427],
-  "Tortuguero": [10.5414, -83.5025],
-  "Huaraz": [-9.5278, -77.5278],
-  "Cusco": [-13.532, -71.9675],
-  "Iquitos": [-3.7437, -73.2516],
-  "Ica": [-14.0678, -75.7286],
-  "Paracas": [-13.7333, -76.2667],
-  "Arequipa": [-16.409, -71.5375],
-  "Líneas de Nazca": [-14.739, -75.13],
-  "Lima": [-12.0464, -77.0428],
-  "Los Roques": [11.9463, -66.6713],
-  "Canaima": [6.2407, -62.8533],
-  "Mérida (Venezuela)": [8.5983, -71.1449],
-  "La Habana": [23.1136, -82.3666],
-  "Varadero": [23.1537, -81.2514],
-  "Santo Domingo": [18.4861, -69.9312],
-  "Punta Cana": [18.5601, -68.3725],
-  "República Dominicana": [18.5601, -68.3725],
-  "Dominica": [18.4861, -69.9312],
-};;
-
-const getCoords = (cityName) => {
-  if (!cityName) return [0, 0];
-  const cleanName = cityName.trim();
-  if (COORDENADAS_CIUDADES[cleanName]) return COORDENADAS_CIUDADES[cleanName];
-  const partBeforeComma = cleanName.split(',')[0].trim();
-  if (COORDENADAS_CIUDADES[partBeforeComma]) return COORDENADAS_CIUDADES[partBeforeComma];
-  return [0, 0];
-};
-
-// Mapa de colores e información de países con coordenadas SVG realistas
-const PAISES_DATA = {
-  "México": {
-    color: "#059669",
-    destinos: [
-      { nombre: "Cancún", ciudad: "Cancún", categoria: "Playa", desc: "Playas caribeñas de agua turquesa." },
-      { nombre: "Teotihuacán", ciudad: "Bogotá", categoria: "Cultura", desc: "Pirámides ancestrales del Sol y la Luna." },
-      { nombre: "San Miguel de Allende", ciudad: "Cancún", categoria: "Cultura", desc: "Pueblo mágico con hermosa arquitectura colonial." }
-    ],
-    vuelos: [
-      { id: 601, codigo_vuelo: 'OC-601', origen: 'San José, CR', destino_pais: 'México', destino_ciudad: 'Cancún', fecha_salida: '2026-07-11T12:00:00Z', fecha_llegada: '2026-07-11T14:30:00Z', duracion: 150, precio: 1100 }
-    ],
-    // Trazado de mapa realista de México
-    path: "M 30,120 L 70,80 L 130,100 L 180,120 L 200,150 L 175,170 C 160,165 140,160 120,155 L 95,170 C 85,175 70,160 60,140 Z"
-  },
-  "Colombia": {
-    color: "#eab308",
-    destinos: [
-      { nombre: "Santuario de Las Lajas", ciudad: "Bogotá", categoria: "Montaña", desc: "Una joya arquitectónica construida sobre un cañón." },
-      { nombre: "Parque Nacional Natural Tayrona", ciudad: "Bogotá", categoria: "Playa", desc: "Bahías de arena blanca rodeadas de selva tropical." },
-      { nombre: "Catedral de Sal de Zipaquirá", ciudad: "Bogotá", categoria: "Cultura", desc: "Una iglesia subterránea tallada completamente en sal." }
-    ],
-    vuelos: [
-      { id: 101, codigo_vuelo: 'OC-101', origen: 'Ciudad de México, MX', destino_pais: 'Colombia', destino_ciudad: 'Bogotá', fecha_salida: '2026-07-06T08:00:00Z', fecha_llegada: '2026-07-06T12:30:00Z', duracion: 270, precio: 1200 },
-      { id: 301, codigo_vuelo: 'OC-301', origen: 'Buenos Aires, AR', destino_pais: 'Colombia', destino_ciudad: 'Medellín', fecha_salida: '2026-07-08T07:00:00Z', fecha_llegada: '2026-07-08T12:30:00Z', duracion: 390, precio: 2100 }
-    ],
-    // Trazado de mapa realista de Colombia
-    path: "M 175,225 C 190,210 205,215 215,220 L 230,240 C 220,255 210,265 195,265 L 180,250 Z"
-  },
-  "Chile": {
-    color: "#ef4444",
-    destinos: [
-      { nombre: "Torres del Paine", ciudad: "Santiago", categoria: "Montaña", desc: "Imponentes montañas y glaciares en la Patagonia chilena." },
-      { nombre: "Desierto de Atacama", ciudad: "Santiago", categoria: "Montaña", desc: "El desierto no polar más árido de la Tierra." },
-      { nombre: "Isla de Pascua", ciudad: "Santiago", categoria: "Cultura", desc: "Famosa por sus enigmáticas estatuas de piedra Moái." }
-    ],
-    vuelos: [
-      { id: 102, codigo_vuelo: 'OC-102', origen: 'Ciudad de México, MX', destino_pais: 'Chile', destino_ciudad: 'Santiago', fecha_salida: '2026-07-06T14:00:00Z', fecha_llegada: '2026-07-06T22:30:00Z', duracion: 510, precio: 2400 },
-      { id: 401, codigo_vuelo: 'OC-401', origen: 'Río de Janeiro, BR', destino_pais: 'Chile', destino_ciudad: 'Santiago', fecha_salida: '2026-07-09T15:00:00Z', fecha_llegada: '2026-07-09T19:30:00Z', duracion: 330, precio: 1900 }
-    ],
-    // Trazado de mapa realista de Chile (delgada faja costera)
-    path: "M 180,380 L 190,380 L 188,440 L 182,500 L 175,560 L 168,560 L 174,480 Z"
-  },
-  "Perú": {
-    color: "#a855f7",
-    destinos: [
-      { nombre: "Machu Picchu", ciudad: "Cusco", categoria: "Montaña", desc: "La legendaria ciudadela inca en las alturas de los Andes." },
-      { nombre: "Líneas de Nazca", ciudad: "Lima", categoria: "Cultura", desc: "Geoglifos antiguos grabados en las arenas del desierto." },
-      { nombre: "Lago Titicaca", ciudad: "Cusco", categoria: "Montaña", desc: "El lago navegable más alto del mundo." }
-    ],
-    vuelos: [
-      { id: 103, codigo_vuelo: 'OC-103', origen: 'Ciudad de México, MX', destino_pais: 'Perú', destino_ciudad: 'Lima', fecha_salida: '2026-07-06T09:30:00Z', fecha_llegada: '2026-07-06T15:45:00Z', duracion: 375, precio: 1800 },
-      { id: 302, codigo_vuelo: 'OC-302', origen: 'Santiago, CL', destino_pais: 'Perú', destino_ciudad: 'Cusco', fecha_salida: '2026-07-08T13:00:00Z', fecha_llegada: '2026-07-08T16:30:00Z', duracion: 270, precio: 1600 }
-    ],
-    // Trazado de mapa realista de Perú
-    path: "M 160,250 L 185,270 L 205,290 C 190,310 185,330 170,345 L 150,305 C 155,285 160,265 160,250 Z"
-  },
-  "Brasil": {
-    color: "#3b82f6",
-    destinos: [
-      { nombre: "Cristo Redentor", ciudad: "Río de Janeiro", categoria: "Cultura", desc: "Estatua icónica que corona el cerro del Corcovado." },
-      { nombre: "Cataratas del Iguazú", ciudad: "Río de Janeiro", categoria: "Montaña", desc: "Uno de los sistemas de cascadas más grandes del mundo." },
-      { nombre: "Playa de Copacabana", ciudad: "Río de Janeiro", categoria: "Playa", desc: "Famosa playa en forma de media luna en Río de Janeiro." }
-    ],
-    vuelos: [
-      { id: 201, codigo_vuelo: 'OC-201', origen: 'Bogotá, CO', destino_pais: 'Brasil', destino_ciudad: 'Río de Janeiro', fecha_salida: '2026-07-07T10:00:00Z', fecha_llegada: '2026-07-07T18:30:00Z', duracion: 390, precio: 2200 }
-    ],
-    // Trazado de mapa realista de Brasil
-    path: "M 220,220 C 245,215 285,225 320,245 C 330,270 335,290 310,335 C 285,370 255,360 230,330 C 210,310 212,285 220,220 Z"
-  },
-  "Argentina": {
-    color: "#06b6d4",
-    destinos: [
-      { nombre: "Glaciar Perito Moreno", ciudad: "Buenos Aires", categoria: "Montaña", desc: "Impresionante pared de hielo en la Patagonia." },
-      { nombre: "Bariloche", ciudad: "Buenos Aires", categoria: "Montaña", desc: "Lagos cristalinos y montañas ideales para esquí." },
-      { nombre: "Cataratas del Iguazú", ciudad: "Buenos Aires", categoria: "Montaña", desc: "Maravillosa vista de las cataratas compartidas con Brasil." }
-    ],
-    vuelos: [
-      { id: 202, codigo_vuelo: 'OC-202', origen: 'Lima, PE', destino_pais: 'Argentina', destino_ciudad: 'Buenos Aires', fecha_salida: '2026-07-07T11:00:00Z', fecha_llegada: '2026-07-07T16:30:00Z', duracion: 270, precio: 1500 }
-    ],
-    // Trazado de mapa realista de Argentina
-    path: "M 190,380 L 225,380 L 220,440 L 200,520 L 180,560 L 178,500 L 188,440 Z"
-  },
-  "Costa Rica": {
-    color: "#f97316",
-    destinos: [
-      { nombre: "Volcán Arenal", ciudad: "San José", categoria: "Montaña", desc: "Volcán activo rodeado de aguas termales." },
-      { nombre: "Parque Manuel Antonio", ciudad: "San José", categoria: "Playa", desc: "Playas paradisíacas con abundancia de perezosos y monos." },
-      { nombre: "Monteverde", ciudad: "San José", categoria: "Montaña", desc: "Reserva de bosque nuboso y tirolesas gigantes." }
-    ],
-    vuelos: [
-      { id: 501, codigo_vuelo: 'OC-501', origen: 'Bogotá, CO', destino_pais: 'Costa Rica', destino_ciudad: 'San José', fecha_salida: '2026-07-10T09:00:00Z', fecha_llegada: '2026-07-10T11:15:00Z', duracion: 135, precio: 950 }
-    ],
-    // Trazado de mapa realista de Costa Rica (Centroamérica)
-    path: "M 135,175 L 165,185 L 160,200 L 140,215 L 130,195 Z"
-  }
-};
+const { MapaInteractivo } = window;
 
 function App() {
   const [user, setUser] = useState(null);
@@ -213,15 +8,6 @@ function App() {
 
   // Estados de Vuelos y Mapa
   const [vuelos, setVuelos] = useState([]);
-  const [hoveredCountry, setHoveredCountry] = useState(null);
-  const [selectedCountry, setSelectedCountry] = useState(null);
-  const [selectedDestination, setSelectedDestination] = useState(null); // Nuevo estado de filtro por destino interactivo
-  const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
-  const [busquedaRealizada, setBusquedaRealizada] = useState(false);
-  const [filtroPresupuesto, setFiltroPresupuesto] = useState("");
-  const [filtroGusto, setFiltroGusto] = useState("");
-  const [filtroTiempo, setFiltroTiempo] = useState("");
-  const [filtroNoVisitados, setFiltroNoVisitados] = useState(false);
 
   // Estados de Parking
   const [parkingSlots, setParkingSlots] = useState([]);
@@ -238,154 +24,6 @@ function App() {
   const [incidenciaMsg, setIncidenciaMsg] = useState("");
   const [escalarComentario, setEscalarComentario] = useState("");
   const [activeTicketForEscalation, setActiveTicketForEscalation] = useState("");
-
-  // Referencias para el Mapa de Leaflet
-  const mapRef = useRef(null);
-  const mapInstanceRef = useRef(null);
-  const layersRef = useRef({ markers: {}, routes: [] });
-
-  useEffect(() => {
-    // Si no estamos en la pestaña del mapa o no existe el ref del contenedor DOM, limpiar todo
-    if (activeTab !== "mapa" || !mapRef.current) {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
-      return;
-    }
-
-    // Inicializar mapa si no existe
-    if (!mapInstanceRef.current) {
-      const map = L.map(mapRef.current, {
-        center: [-15, -62],
-        zoom: 3.2,
-        zoomControl: true,
-      });
-
-      // Capa premium oscura (CartoDB Dark Matter)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 20
-      }).addTo(map);
-
-      mapInstanceRef.current = map;
-    }
-
-    const mapInstance = mapInstanceRef.current;
-
-    // Limpiar marcadores y polilíneas anteriores
-    Object.values(layersRef.current.markers).forEach(marker => mapInstance.removeLayer(marker));
-    layersRef.current.routes.forEach(route => mapInstance.removeLayer(route));
-    layersRef.current.markers = {};
-    layersRef.current.routes = [];
-
-    // Determinar qué vuelos mostrar (resultados filtrados o todos si no se ha buscado)
-    const vuelosAMostrar = resultadosBusqueda && resultadosBusqueda.length > 0 ? resultadosBusqueda : vuelos;
-
-    // Pintar los vuelos y conectar ciudades
-    vuelosAMostrar.forEach(v => {
-      const originCoords = getCoords(v.origen);
-      const destCoords = getCoords(v.destino_ciudad);
-
-      if (originCoords[0] === 0 || destCoords[0] === 0) return;
-
-      // 1. Agregar o recuperar marcador de Origen
-      const originKey = `origin-${v.origen}`;
-      if (!layersRef.current.markers[originKey]) {
-        const originIcon = L.divIcon({
-          className: 'custom-marker',
-          html: `<div class="marker-pin origin" title="${v.origen}"></div>`,
-          iconSize: [24, 24],
-          iconAnchor: [12, 12]
-        });
-        const m = L.marker(originCoords, { icon: originIcon }).addTo(mapInstance);
-        m.bindTooltip(`<b>Origen:</b> ${v.origen}`, { permanent: false, direction: 'top' });
-        layersRef.current.markers[originKey] = m;
-      }
-
-      // 2. Agregar o recuperar marcador de Destino
-      const destKey = `dest-${v.destino_ciudad}`;
-      if (!layersRef.current.markers[destKey]) {
-        const destIcon = L.divIcon({
-          className: 'custom-marker',
-          html: `<div class="marker-pin" title="${v.destino_ciudad}"></div>`,
-          iconSize: [24, 24],
-          iconAnchor: [12, 12]
-        });
-        const m = L.marker(destCoords, { icon: destIcon }).addTo(mapInstance);
-        
-        // Habilitar selección de país al hacer click en el marcador
-        m.on('click', () => {
-          setSelectedCountry(v.destino_pais);
-        });
-
-        m.bindTooltip(`<b>Destino:</b> ${v.destino_ciudad} (${v.destino_pais})`, { permanent: false, direction: 'top' });
-        layersRef.current.markers[destKey] = m;
-      }
-
-      // 3. Dibujar ruta aérea (línea)
-      const polyline = L.polyline([originCoords, destCoords], {
-        color: '#06b6d4',
-        weight: 2,
-        opacity: 0.6,
-        dashArray: '5, 5',
-        lineCap: 'round'
-      }).addTo(mapInstance);
-
-      // Crear Popup interactivo en la ruta
-      const popupContent = `
-        <div class="space-y-3 text-slate-100 min-w-[200px]">
-          <div class="flex justify-between items-center">
-            <span class="bg-blue-900/50 border border-blue-700 text-blue-200 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide">
-              ${v.codigo_vuelo}
-            </span>
-            <span class="text-[10px] text-slate-400 font-bold">${new Date(v.fecha_salida).toLocaleDateString()}</span>
-          </div>
-          <div>
-            <h4 class="font-extrabold text-sm text-white">${v.destino_ciudad}</h4>
-            <p class="text-[10px] text-slate-400">Origen: ${v.origen}</p>
-            <p class="text-[10px] text-emerald-400 font-bold mt-1">Precio: ${parseFloat(v.precio_monedas || v.precio).toLocaleString()} MO</p>
-            <p class="text-[9px] text-slate-400">Asientos: ${v.asientos_disponibles || 0}</p>
-          </div>
-          <button 
-            id="book-btn-${v.id}"
-            class="w-full mt-2 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold rounded-lg text-xs transition duration-150 shadow-md"
-          >
-            Reservar Vuelo
-          </button>
-        </div>
-      `;
-
-      polyline.bindPopup(popupContent);
-      layersRef.current.routes.push(polyline);
-    });
-
-    // Escuchar el evento de apertura de popups para enlazar el click del botón de reservar
-    const handlePopupOpen = (e) => {
-      const popup = e.popup;
-      if (!popup) return;
-      
-      const matches = popup.getContent().match(/id="book-btn-(\d+)"/);
-      if (matches && matches[1]) {
-        const vueloId = Number(matches[1]);
-        const btn = document.getElementById(`book-btn-${vueloId}`);
-        if (btn) {
-          btn.onclick = () => {
-            handleBookFlight(vueloId);
-            mapInstance.closePopup();
-          };
-        }
-      }
-    };
-
-    mapInstance.on('popupopen', handlePopupOpen);
-
-    return () => {
-      mapInstance.off('popupopen', handlePopupOpen);
-    };
-
-  }, [activeTab, resultadosBusqueda, vuelos]);
 
   // Cargar sesión al iniciar
   useEffect(() => {
@@ -414,7 +52,6 @@ function App() {
       const res = await fetch('/api/vuelos');
       const data = await res.json();
       setVuelos(data);
-      setResultadosBusqueda(data);
     } catch (e) {
       console.error(e);
     }
@@ -503,28 +140,6 @@ function App() {
     setMyOcupation(null);
   };
 
-  // Búsqueda inteligente de vuelos
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await fetch('/api/vuelos/buscar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          presupuesto: filtroPresupuesto,
-          gusto: filtroGusto,
-          tiempoDisponible: filtroTiempo,
-          soloNoVisitados: filtroNoVisitados
-        })
-      });
-      const data = await res.json();
-      setResultadosBusqueda(data);
-      setBusquedaRealizada(true);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   // Reservar Vuelo
   const handleBookFlight = async (vueloId) => {
     if (!user) {
@@ -542,7 +157,6 @@ function App() {
         alert("¡Vuelo reservado con éxito!");
         fetchSession();
         fetchVuelos();
-        setSelectedCountry(null);
       } else {
         alert(data.error);
       }
@@ -715,44 +329,6 @@ function App() {
     }
   };
 
-  // Algoritmo de Tiempo Neto de Estancia
-  const getStayDetails = (duracionMinutos) => {
-    if (!filtroTiempo) return null;
-    const totalMinutos = parseFloat(filtroTiempo) * 60;
-    const vueloMinutos = duracionMinutos * 2; // ida y vuelta
-    const netoMinutos = totalMinutos - vueloMinutos;
-    const netoHoras = (netoMinutos / 60).toFixed(1);
-    
-    const ratio = (vueloMinutos / totalMinutos) * 100;
-    const tieneAdvertencia = ratio > 40;
-
-    return {
-      horas: netoHoras,
-      porcentaje: ratio.toFixed(0),
-      advertencia: tieneAdvertencia
-    };
-  };
-
-  // Filtrado de vuelos dentro del Modal por Destino específico
-  const getVuelosParaMostrarEnModal = () => {
-    if (!selectedCountry) return [];
-    
-    // Filtrar vuelos que coincidan con el país
-    let filtered = vuelos.filter(v => v.destino_pais === selectedCountry);
-
-    // Si hay un destino turístico específico seleccionado, filtrar por la ciudad de ese destino
-    if (selectedDestination) {
-      const destObj = PAISES_DATA[selectedCountry]?.destinos.find(d => d.nombre === selectedDestination);
-      if (destObj) {
-        filtered = filtered.filter(v => 
-          v.destino_ciudad.toLowerCase().includes(destObj.ciudad.toLowerCase()) ||
-          destObj.ciudad.toLowerCase().includes(v.destino_ciudad.toLowerCase())
-        );
-      }
-    }
-    return filtered;
-  };
-
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen space-y-4 bg-slate-50">
@@ -765,15 +341,15 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
       
-      {/* Barra de Navegación Superior */}
-      <header className="bg-[#162b4e] text-white px-6 py-4 flex items-center justify-between sticky top-0 z-40 shadow-md">
+      {/* Barra de Navegación Superior (Whitened and Clean) */}
+      <header className="bg-white border-b border-slate-200 text-slate-900 px-6 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center font-extrabold text-lg text-[#162b4e] shadow-md">
+          <div className="w-10 h-10 rounded-xl bg-[#162b4e] flex items-center justify-center font-extrabold text-lg text-white shadow-md">
             AO
           </div>
           <div>
-            <span className="font-extrabold text-lg block tracking-wide text-white leading-tight">AEROLÍNEAS OCEÁNICAS</span>
-            <span className="text-xs text-blue-200 font-medium tracking-wider uppercase">Plataforma Aeroportuaria</span>
+            <span className="font-extrabold text-lg block tracking-wide text-slate-800 leading-tight">AEROLÍNEAS OCEÁNICAS</span>
+            <span className="text-xs text-slate-500 font-medium tracking-wider uppercase">Plataforma Aeroportuaria</span>
           </div>
         </div>
 
@@ -782,12 +358,12 @@ function App() {
           {user ? (
             <div className="flex items-center space-x-4">
               <div className="text-right hidden sm:block">
-                <span className="font-bold text-sm block text-white">{user.nombre}</span>
+                <span className="font-bold text-sm block text-slate-800">{user.nombre}</span>
                 <div className="flex items-center justify-end space-x-2">
-                  <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-bold border border-white/10">
+                  <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold border border-slate-200">
                     {user.rol}
                   </span>
-                  <span className="font-bold text-xs text-emerald-300">
+                  <span className="font-bold text-xs text-emerald-600">
                     💰 {parseFloat(user.saldo).toLocaleString()} MO
                   </span>
                 </div>
@@ -795,7 +371,7 @@ function App() {
               <img 
                 src={user.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.nombre}`} 
                 alt="Avatar" 
-                className="w-10 h-10 rounded-xl border border-white/20 bg-slate-900 shadow-sm"
+                className="w-10 h-10 rounded-xl border border-slate-200 bg-slate-900 shadow-sm"
               />
               <button 
                 onClick={handleLogout}
@@ -888,243 +464,12 @@ function App() {
           
           {/* TAB 1: MAPA INTERACTIVO Y VUELOS */}
           {activeTab === "mapa" && (
-            <div className="space-y-8">
-              
-              {/* Buscador y Mapa */}
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                
-                {/* Formulario de Búsqueda */}
-                <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-md flex flex-col justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold mb-4 text-[#162b4e] flex items-center space-x-2">
-                      <i data-lucide="sliders-horizontal" className="w-5 h-5 text-[#162b4e]"></i>
-                      <span>Buscador Inteligente</span>
-                    </h2>
-                    <form onSubmit={handleSearch} className="space-y-4">
-                      <div>
-                        <label className="block text-xs font-semibold uppercase text-slate-500 mb-1.5">Presupuesto Máximo (MO)</label>
-                        <input 
-                          type="number" 
-                          value={filtroPresupuesto}
-                          onChange={e => setFiltroPresupuesto(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 focus:border-[#162b4e] rounded-xl px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white"
-                          placeholder="Ej. 2000"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold uppercase text-slate-500 mb-1.5">Tiempo Disponible (Horas)</label>
-                        <input 
-                          type="number" 
-                          value={filtroTiempo}
-                          onChange={e => setFiltroTiempo(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 focus:border-[#162b4e] rounded-xl px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white"
-                          placeholder="Ej. 48"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold uppercase text-slate-500 mb-1.5">Categoría / Gusto</label>
-                        <select 
-                          value={filtroGusto}
-                          onChange={e => setFiltroGusto(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 focus:border-[#162b4e] rounded-xl px-4 py-2.5 text-slate-900 focus:outline-none focus:bg-white"
-                        >
-                          <option value="">Cualquiera</option>
-                          <option value="Playa">Playa</option>
-                          <option value="Cultura">Cultura</option>
-                          <option value="Montaña">Montaña</option>
-                        </select>
-                      </div>
-
-                      <div className="flex items-center space-x-3 py-2">
-                        <input 
-                          type="checkbox" 
-                          id="unvisited" 
-                          checked={filtroNoVisitados}
-                          onChange={e => setFiltroNoVisitados(e.target.checked)}
-                          className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 bg-white"
-                        />
-                        <label htmlFor="unvisited" className="text-xs font-medium text-slate-600 select-none">
-                          Mostrar sólo destinos no visitados
-                        </label>
-                      </div>
-
-                      <button 
-                        type="submit" 
-                        className="w-full py-3 bg-[#162b4e] hover:bg-[#0f1f3a] text-white font-bold rounded-xl transition duration-150 shadow-md"
-                      >
-                        Filtrar Destinos
-                      </button>
-                    </form>
-                  </div>
-
-                  {user && (
-                    <div className="mt-6 pt-4 border-t border-slate-200">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Destinos Visitados por ti</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {user.ciudadesVisitadas && user.ciudadesVisitadas.length > 0 ? (
-                          user.ciudadesVisitadas.map((city, i) => (
-                            <span key={i} className="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-xs text-slate-600">
-                              ✓ {city}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-xs text-slate-400">Ningún destino visitado aún.</span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Mapa Interactivo Leaflet.js */}
-                <div className="xl:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl shadow-xl overflow-hidden relative min-h-[450px] flex">
-                  <div ref={mapRef} className="w-full z-10" style={{ height: '450px', minHeight: '450px' }}></div>
-                  <div className="absolute top-4 right-4 bg-slate-950/80 backdrop-blur border border-slate-800 px-3 py-1.5 rounded-xl text-[10px] font-bold text-slate-300 uppercase tracking-wider z-20 pointer-events-none shadow-md">
-                    Rutas de Vuelo Interactivas
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Resultados de Búsqueda Inteligente */}
-              {busquedaRealizada && (
-                <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-md space-y-4">
-                  <h3 className="text-lg font-bold text-[#162b4e]">Resultados del Filtro Inteligente</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {resultadosBusqueda.map((v) => {
-                      const stay = getStayDetails(v.duracion_vuelo_minutos || v.duracion);
-                      return (
-                        <div key={v.id} className="bg-slate-50 border border-slate-200 p-5 rounded-2xl flex flex-col justify-between shadow-sm">
-                          <div>
-                            <div className="flex justify-between items-start mb-3">
-                              <span className="bg-blue-50 text-[#162b4e] border border-blue-200 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider">
-                                {v.codigo_vuelo}
-                              </span>
-                              <span className="text-xs text-slate-400">
-                                {new Date(v.fecha_salida).toLocaleDateString()}
-                              </span>
-                            </div>
-                            <h4 className="font-bold text-lg text-slate-800">{v.destino_ciudad} ({v.destino_pais})</h4>
-                            <p className="text-xs text-slate-500 mt-1">Origen: {v.origen}</p>
-                            
-                            {stay && (
-                              <div className="mt-4 p-3 bg-white border border-slate-200 rounded-xl space-y-1">
-                                <p className="text-xs text-emerald-600 font-bold">Estancia Estimada: {stay.horas} hrs</p>
-                                <p className="text-[10px] text-slate-500">El vuelo consume {stay.porcentaje}% del tiempo total.</p>
-                                {stay.advertencia && (
-                                  <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-[10px] text-amber-700 font-medium">
-                                    ⚠️ El viaje aéreo consume gran parte de tu tiempo disponible. Alto riesgo por retrasos aeroportuarios.
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className="mt-6 flex items-center justify-between pt-4 border-t border-slate-200/60">
-                            <span className="font-extrabold text-[#162b4e] text-lg">{v.precio_monedas || v.precio} MO</span>
-                            <button 
-                              onClick={() => handleBookFlight(v.id)}
-                              className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition duration-150"
-                            >
-                              Reservar
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {resultadosBusqueda.length === 0 && (
-                      <p className="text-slate-500 text-sm">No se encontraron vuelos que coincidan con sus filtros.</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Modal de Detalle de País */}
-              {selectedCountry && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                  <div className="bg-white border border-slate-200 w-full max-w-2xl p-8 rounded-3xl relative shadow-2xl space-y-6">
-                    <button 
-                      onClick={() => { setSelectedCountry(null); setSelectedDestination(null); }}
-                      className="absolute top-4 right-4 text-slate-400 hover:text-slate-800 text-2xl font-bold"
-                    >
-                      &times;
-                    </button>
-                    
-                    <div>
-                      <h3 className="text-2xl font-extrabold tracking-tight text-[#162b4e]">{selectedCountry}</h3>
-                      <p className="text-xs text-slate-500">Haz clic en un destino turístico para filtrar los vuelos directos correspondientes.</p>
-                    </div>
-
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Lugares Más Turísticos (Haz clic para seleccionar)</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        {PAISES_DATA[selectedCountry]?.destinos.map((dest, idx) => {
-                          const isSelected = selectedDestination === dest.nombre;
-                          return (
-                            <div 
-                              key={idx} 
-                              onClick={() => setSelectedDestination(isSelected ? null : dest.nombre)}
-                              className={`p-4 rounded-xl space-y-1 cursor-pointer transition-all duration-150 border ${
-                                isSelected 
-                                  ? 'bg-blue-50 border-blue-500 shadow-md ring-2 ring-blue-500/20' 
-                                  : 'bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
-                              }`}
-                            >
-                              <span className="text-[10px] uppercase font-bold text-blue-600">{dest.categoria}</span>
-                              <h5 className="font-bold text-sm text-slate-800">{dest.nombre}</h5>
-                              <p className="text-[10px] text-slate-500 leading-normal">{dest.desc}</p>
-                              {isSelected && <span className="text-[9px] text-blue-600 font-bold block mt-1">✓ Destino Seleccionado</span>}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                        {selectedDestination ? `Vuelos Disponibles a ${selectedDestination}` : `Todos los Vuelos a ${selectedCountry}`}
-                      </h4>
-                      <div className="space-y-3 max-h-[180px] overflow-y-auto pr-1">
-                        {getVuelosParaMostrarEnModal().map((v) => {
-                          const stay = getStayDetails(v.duracion_vuelo_minutos || v.duracion);
-                          return (
-                            <div key={v.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
-                              <div>
-                                <div className="flex items-center space-x-2">
-                                  <span className="bg-blue-50 text-[#162b4e] border border-blue-200 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
-                                    {v.codigo_vuelo}
-                                  </span>
-                                  <span className="font-bold text-sm text-slate-800">{v.destino_city || v.destino_ciudad}</span>
-                                </div>
-                                <p className="text-[10px] text-slate-400 mt-1">Salida: {new Date(v.fecha_salida).toLocaleString()}</p>
-                                {stay && (
-                                  <p className="text-[10px] text-emerald-600 mt-1 font-bold">Estancia neta: {stay.horas} hrs</p>
-                                )}
-                              </div>
-                              <div className="flex items-center space-x-4 w-full sm:w-auto justify-between sm:justify-end">
-                                <span className="font-bold text-[#162b4e]">{v.precio_monedas || v.precio} MO</span>
-                                <button 
-                                  onClick={() => handleBookFlight(v.id)}
-                                  className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg text-xs transition duration-150"
-                                >
-                                  Reservar
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                        {getVuelosParaMostrarEnModal().length === 0 && (
-                          <p className="text-xs text-slate-400">No hay vuelos programados específicos para este destino en la ventana temporal.</p>
-                        )}
-                      </div>
-                    </div>
-
-                  </div>
-                </div>
-              )}
-
-            </div>
+            <MapaInteractivo 
+              userBalance={user ? user.saldo : 5000}
+              vuelos={vuelos}
+              handleBookFlight={handleBookFlight}
+              user={user}
+            />
           )}
 
           {/* TAB 2: APARCAMIENTO QR */}
