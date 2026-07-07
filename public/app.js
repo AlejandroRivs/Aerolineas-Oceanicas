@@ -979,7 +979,7 @@ function App() {
 
                 {/* Mapa Interactivo Leaflet.js */}
                 <div className="xl:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl shadow-xl overflow-hidden relative min-h-[450px] flex">
-                  <div ref={mapRef} className="w-full h-full min-h-[450px] z-10"></div>
+                  <div ref={mapRef} className="w-full z-10" style={{ height: '450px', minHeight: '450px' }}></div>
                   <div className="absolute top-4 right-4 bg-slate-950/80 backdrop-blur border border-slate-800 px-3 py-1.5 rounded-xl text-[10px] font-bold text-slate-300 uppercase tracking-wider z-20 pointer-events-none shadow-md">
                     Rutas de Vuelo Interactivas
                   </div>
