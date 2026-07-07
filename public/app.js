@@ -1,4 +1,112 @@
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
+
+const COORDENADAS_CIUDADES = {
+  "Cancún": [21.1619, -86.8515],
+  "Ciudad de México": [19.4326, -99.1332],
+  "Guadalajara": [20.6597, -103.3496],
+  "Los Cabos": [22.8905, -109.9167],
+  "Oaxaca": [17.0732, -96.7266],
+  "Guanajuato": [21.019, -101.2574],
+  "Playa del Carmen": [20.6296, -87.0739],
+  "Mérida": [8.5983, -71.1449],
+  "Monterrey": [25.6866, -100.3161],
+  "San Pedro de Atacama": [-22.911, -68.1991],
+  "Valparaíso": [-33.0472, -71.6127],
+  "San Alfonso del Mar": [-33.3512, -71.6528],
+  "Pucón": [-39.273, -71.9774],
+  "Santiago": [-33.4489, -70.6693],
+  "Torres del Paine": [-50.9423, -72.9344],
+  "Bogotá": [4.711, -74.0721],
+  "Cali": [3.4516, -76.532],
+  "Leticia": [-4.2153, -69.9406],
+  "Medellín": [6.2442, -75.5812],
+  "Cartagena": [10.391, -75.4794],
+  "Santa Marta": [11.2408, -74.199],
+  "San Andrés": [12.5847, -81.7006],
+  "Eje Cafetero": [4.6259, -75.7515],
+  "Manaos": [-3.119, -60.0217],
+  "Búzios": [-22.7558, -41.8878],
+  "Río de Janeiro": [-22.9068, -43.1729],
+  "Foz do Iguaçu": [-25.5478, -54.5881],
+  "Fernando de Noronha": [-3.8548, -32.4234],
+  "Natal": [-5.7945, -35.211],
+  "Lençóis Maranhenses": [-2.4855, -43.1206],
+  "Ciudad del Este": [-25.5097, -54.6111],
+  "Antigua Guatemala": [14.5611, -90.7344],
+  "Flores": [16.93, -89.89],
+  "Lago Atitlán": [14.6907, -91.2017],
+  "Semuc Champey": [15.5562, -89.9602],
+  "La Libertad": [13.4883, -89.3217],
+  "Santa Ana": [13.9942, -89.5597],
+  "Suchitoto": [13.9372, -89.0275],
+  "Ruta de las Flores": [13.8441, -89.8242],
+  "Copán Ruinas": [14.8394, -89.1558],
+  "Roatán": [16.3262, -86.5381],
+  "Tela": [15.7744, -87.4522],
+  "Útila": [16.1004, -86.8973],
+  "Quito": [-0.1807, -78.4678],
+  "Islas Galápagos": [-0.8293, -90.9821],
+  "Cuenca": [-2.9001, -79.0059],
+  "Montañita": [-1.8278, -80.7525],
+  "Tena": [-0.9938, -77.8129],
+  "León": [12.4379, -86.878],
+  "Granada": [12.1264, -85.9575],
+  "San Juan del Sur": [11.2529, -85.8703],
+  "Isla de Ometepe": [11.5034, -85.6033],
+  "Mendoza": [-32.8895, -68.8458],
+  "Salta": [-24.7821, -65.4232],
+  "Bariloche": [-41.1335, -71.3103],
+  "Ushuaia": [-54.8019, -68.303],
+  "Puerto Madryn": [-42.7692, -65.0385],
+  "Buenos Aires": [-34.6037, -58.3816],
+  "El Calafate": [-50.3381, -72.2647],
+  "Copacabana": [-16.1667, -69.0833],
+  "Sucre": [-19.0353, -65.2627],
+  "Uyuni": [-20.4597, -66.825],
+  "La Paz": [-16.4897, -68.1193],
+  "Toro Toro": [-18.1333, -65.7667],
+  "Asunción": [-25.2637, -57.5759],
+  "Encarnación": [-27.3306, -55.8667],
+  "Colonia del Sacramento": [-34.4698, -57.8436],
+  "Cabo Polonio": [-34.3986, -53.8139],
+  "Punta del Este": [-34.9631, -54.944],
+  "Punta del Diablo": [-34.0436, -53.5398],
+  "San Blas": [9.5735, -78.932],
+  "Bocas del Toro": [9.3403, -82.2423],
+  "Chiriquí": [8.4333, -82.4333],
+  "Ciudad de Panamá": [8.9824, -79.5199],
+  "Portobelo": [9.5539, -79.6547],
+  "Jacó": [9.615, -84.6297],
+  "Manuel Antonio": [9.3888, -84.1481],
+  "La Fortuna": [10.4678, -84.6427],
+  "Tortuguero": [10.5414, -83.5025],
+  "Huaraz": [-9.5278, -77.5278],
+  "Cusco": [-13.532, -71.9675],
+  "Iquitos": [-3.7437, -73.2516],
+  "Ica": [-14.0678, -75.7286],
+  "Paracas": [-13.7333, -76.2667],
+  "Arequipa": [-16.409, -71.5375],
+  "Líneas de Nazca": [-14.739, -75.13],
+  "Lima": [-12.0464, -77.0428],
+  "Los Roques": [11.9463, -66.6713],
+  "Canaima": [6.2407, -62.8533],
+  "Mérida (Venezuela)": [8.5983, -71.1449],
+  "La Habana": [23.1136, -82.3666],
+  "Varadero": [23.1537, -81.2514],
+  "Santo Domingo": [18.4861, -69.9312],
+  "Punta Cana": [18.5601, -68.3725],
+  "República Dominicana": [18.5601, -68.3725],
+  "Dominica": [18.4861, -69.9312],
+};;
+
+const getCoords = (cityName) => {
+  if (!cityName) return [0, 0];
+  const cleanName = cityName.trim();
+  if (COORDENADAS_CIUDADES[cleanName]) return COORDENADAS_CIUDADES[cleanName];
+  const partBeforeComma = cleanName.split(',')[0].trim();
+  if (COORDENADAS_CIUDADES[partBeforeComma]) return COORDENADAS_CIUDADES[partBeforeComma];
+  return [0, 0];
+};
 
 // Mapa de colores e información de países con coordenadas SVG realistas
 const PAISES_DATA = {
@@ -130,6 +238,154 @@ function App() {
   const [incidenciaMsg, setIncidenciaMsg] = useState("");
   const [escalarComentario, setEscalarComentario] = useState("");
   const [activeTicketForEscalation, setActiveTicketForEscalation] = useState("");
+
+  // Referencias para el Mapa de Leaflet
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const layersRef = useRef({ markers: {}, routes: [] });
+
+  useEffect(() => {
+    // Si no estamos en la pestaña del mapa o no existe el ref del contenedor DOM, limpiar todo
+    if (activeTab !== "mapa" || !mapRef.current) {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+      return;
+    }
+
+    // Inicializar mapa si no existe
+    if (!mapInstanceRef.current) {
+      const map = L.map(mapRef.current, {
+        center: [-15, -62],
+        zoom: 3.2,
+        zoomControl: true,
+      });
+
+      // Capa premium oscura (CartoDB Dark Matter)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
+      }).addTo(map);
+
+      mapInstanceRef.current = map;
+    }
+
+    const mapInstance = mapInstanceRef.current;
+
+    // Limpiar marcadores y polilíneas anteriores
+    Object.values(layersRef.current.markers).forEach(marker => mapInstance.removeLayer(marker));
+    layersRef.current.routes.forEach(route => mapInstance.removeLayer(route));
+    layersRef.current.markers = {};
+    layersRef.current.routes = [];
+
+    // Determinar qué vuelos mostrar (resultados filtrados o todos si no se ha buscado)
+    const vuelosAMostrar = resultadosBusqueda && resultadosBusqueda.length > 0 ? resultadosBusqueda : vuelos;
+
+    // Pintar los vuelos y conectar ciudades
+    vuelosAMostrar.forEach(v => {
+      const originCoords = getCoords(v.origen);
+      const destCoords = getCoords(v.destino_ciudad);
+
+      if (originCoords[0] === 0 || destCoords[0] === 0) return;
+
+      // 1. Agregar o recuperar marcador de Origen
+      const originKey = `origin-${v.origen}`;
+      if (!layersRef.current.markers[originKey]) {
+        const originIcon = L.divIcon({
+          className: 'custom-marker',
+          html: `<div class="marker-pin origin" title="${v.origen}"></div>`,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+        const m = L.marker(originCoords, { icon: originIcon }).addTo(mapInstance);
+        m.bindTooltip(`<b>Origen:</b> ${v.origen}`, { permanent: false, direction: 'top' });
+        layersRef.current.markers[originKey] = m;
+      }
+
+      // 2. Agregar o recuperar marcador de Destino
+      const destKey = `dest-${v.destino_ciudad}`;
+      if (!layersRef.current.markers[destKey]) {
+        const destIcon = L.divIcon({
+          className: 'custom-marker',
+          html: `<div class="marker-pin" title="${v.destino_ciudad}"></div>`,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+        const m = L.marker(destCoords, { icon: destIcon }).addTo(mapInstance);
+        
+        // Habilitar selección de país al hacer click en el marcador
+        m.on('click', () => {
+          setSelectedCountry(v.destino_pais);
+        });
+
+        m.bindTooltip(`<b>Destino:</b> ${v.destino_ciudad} (${v.destino_pais})`, { permanent: false, direction: 'top' });
+        layersRef.current.markers[destKey] = m;
+      }
+
+      // 3. Dibujar ruta aérea (línea)
+      const polyline = L.polyline([originCoords, destCoords], {
+        color: '#06b6d4',
+        weight: 2,
+        opacity: 0.6,
+        dashArray: '5, 5',
+        lineCap: 'round'
+      }).addTo(mapInstance);
+
+      // Crear Popup interactivo en la ruta
+      const popupContent = `
+        <div class="space-y-3 text-slate-100 min-w-[200px]">
+          <div class="flex justify-between items-center">
+            <span class="bg-blue-900/50 border border-blue-700 text-blue-200 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide">
+              ${v.codigo_vuelo}
+            </span>
+            <span class="text-[10px] text-slate-400 font-bold">${new Date(v.fecha_salida).toLocaleDateString()}</span>
+          </div>
+          <div>
+            <h4 class="font-extrabold text-sm text-white">${v.destino_ciudad}</h4>
+            <p class="text-[10px] text-slate-400">Origen: ${v.origen}</p>
+            <p class="text-[10px] text-emerald-400 font-bold mt-1">Precio: ${parseFloat(v.precio_monedas || v.precio).toLocaleString()} MO</p>
+            <p class="text-[9px] text-slate-400">Asientos: ${v.asientos_disponibles || 0}</p>
+          </div>
+          <button 
+            id="book-btn-${v.id}"
+            class="w-full mt-2 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold rounded-lg text-xs transition duration-150 shadow-md"
+          >
+            Reservar Vuelo
+          </button>
+        </div>
+      `;
+
+      polyline.bindPopup(popupContent);
+      layersRef.current.routes.push(polyline);
+    });
+
+    // Escuchar el evento de apertura de popups para enlazar el click del botón de reservar
+    const handlePopupOpen = (e) => {
+      const popup = e.popup;
+      if (!popup) return;
+      
+      const matches = popup.getContent().match(/id="book-btn-(\d+)"/);
+      if (matches && matches[1]) {
+        const vueloId = Number(matches[1]);
+        const btn = document.getElementById(`book-btn-${vueloId}`);
+        if (btn) {
+          btn.onclick = () => {
+            handleBookFlight(vueloId);
+            mapInstance.closePopup();
+          };
+        }
+      }
+    };
+
+    mapInstance.on('popupopen', handlePopupOpen);
+
+    return () => {
+      mapInstance.off('popupopen', handlePopupOpen);
+    };
+
+  }, [activeTab, resultadosBusqueda, vuelos]);
 
   // Cargar sesión al iniciar
   useEffect(() => {
@@ -721,37 +977,12 @@ function App() {
                   )}
                 </div>
 
-                {/* Mapa SVG de América Latina */}
-                <div className="xl:col-span-2 bg-white border border-slate-200 p-6 rounded-3xl shadow-md flex flex-col items-center justify-center relative min-h-[450px]">
-                  <h3 className="absolute top-4 left-4 text-xs font-bold tracking-wider uppercase text-slate-400">
-                    Seleccione un país de América Latina en el mapa
-                  </h3>
-
-                  <div className="w-full max-w-[320px] h-[400px]">
-                    <svg viewBox="0 0 400 600" className="w-full h-full fill-current">
-                      {Object.keys(PAISES_DATA).map((pais) => {
-                        const info = PAISES_DATA[pais];
-                        const isHovered = hoveredCountry === pais;
-                        return (
-                          <path 
-                            key={pais}
-                            d={info.path}
-                            className="transition-all duration-200 cursor-pointer stroke-white stroke-2"
-                            fill={isHovered ? '#60a5fa' : '#cbd5e1'}
-                            onMouseEnter={() => setHoveredCountry(pais)}
-                            onMouseLeave={() => setHoveredCountry(null)}
-                            onClick={() => setSelectedCountry(pais)}
-                          />
-                        );
-                      })}
-                    </svg>
+                {/* Mapa Interactivo Leaflet.js */}
+                <div className="xl:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl shadow-xl overflow-hidden relative min-h-[450px] flex">
+                  <div ref={mapRef} className="w-full h-full min-h-[450px] z-10"></div>
+                  <div className="absolute top-4 right-4 bg-slate-950/80 backdrop-blur border border-slate-800 px-3 py-1.5 rounded-xl text-[10px] font-bold text-slate-300 uppercase tracking-wider z-20 pointer-events-none shadow-md">
+                    Rutas de Vuelo Interactivas
                   </div>
-
-                  {hoveredCountry && (
-                    <div className="absolute bottom-4 px-4 py-2 bg-[#162b4e] text-white font-extrabold rounded-xl shadow-lg text-sm animate-bounce">
-                      {hoveredCountry}
-                    </div>
-                  )}
                 </div>
 
               </div>
