@@ -2,6 +2,11 @@ const { useState, useEffect } = React;
 const { ComposableMap, Geographies, Geography } = window;
 
 window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleBookFlight, user }) {
+  const [zoom, setZoom] = React.useState(1);
+  // Funciones para los botones flotantes de control
+  const handleZoomIn = () => setZoom(z => Math.min(z + 0.5, 4)); // Máximo 400%
+  const handleZoomOut = () => setZoom(z => Math.max(z - 0.5, 1)); // Mínimo 100%
+  const handleReset = () => setZoom(1);
   // Estados del Buscador Inteligente
   const [presupuesto, setPresupuesto] = useState(5000);
   const [gusto, setGusto] = useState('Todos');
