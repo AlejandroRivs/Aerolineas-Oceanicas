@@ -1197,6 +1197,8 @@ if (process.env.MONGODB_URI) {
 
 // Interfaces unificadas de base de datos
 const db = {
+  useMock: true, // Se sobreescribirá dinámicamente abajo o se leerá directamente
+  supabase: supabase,
   // --- USUARIOS ---
   async getUsuarioByGoogleId(googleId) {
     if (useMock) {
@@ -1665,5 +1667,8 @@ const db = {
     }
   }
 };
+
+db.useMock = useMock;
+db.useMongo = useMongo;
 
 module.exports = db;

@@ -99,7 +99,51 @@ router.post('/api/auth/login', async (ctx) => {
 
   const cred = validCredentials[email];
   if (cred && cred.password === password) {
-    const user = await db.getUsuarioByGoogleId(cred.googleId);
+    let user = await db.getUsuarioByGoogleId(cred.googleId);
+
+    // Si estamos en base de datos real (Supabase) y el usuario no existe aún, lo creamos y configuramos con su rol/saldo específico
+    if (!user && !db.useMock) {
+      const names = {
+        'mock_google_id_1': 'Juan Pérez',
+        'mock_google_id_2': 'Carlos Agente',
+        'mock_google_id_3': 'Marta Gerente',
+        'mock_google_id_4': 'Alex Admin'
+      };
+      const roles = {
+        'mock_google_id_1': 'Cliente',
+        'mock_google_id_2': 'Servicio al Cliente',
+        'mock_google_id_3': 'Gerente',
+        'mock_google_id_4': 'Administrador'
+      };
+      const saldos = {
+        'mock_google_id_1': 5000.00,
+        'mock_google_id_2': 5000.00,
+        'mock_google_id_3': 5000.00,
+        'mock_google_id_4': 100000.00
+      };
+
+      try {
+        user = await db.crearUsuario(cred.googleId, email, names[cred.googleId], null);
+        if (user) {
+          const { data: updatedUser, error: updateErr } = await db.supabase
+            .from('usuarios')
+            .update({
+              rol: roles[cred.googleId],
+              saldo_monedas: saldos[cred.googleId]
+            })
+            .eq('id', user.id)
+            .select()
+            .single();
+
+          if (!updateErr && updatedUser) {
+            user = updatedUser;
+          }
+        }
+      } catch (err) {
+        console.error('Error al auto-aprovisionar usuario de rol en Supabase:', err.message);
+      }
+    }
+
     if (user) {
       ctx.session.user = {
         id: user.id,
