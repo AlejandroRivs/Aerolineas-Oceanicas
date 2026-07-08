@@ -1189,10 +1189,14 @@ if (process.env.DATABASE_URL) {
 if (process.env.MONGODB_URI) {
   try {
     mongoClient = new MongoClient(process.env.MONGODB_URI);
-    mongoClient.connect().then(() => {
-      mongoDb = mongoClient.db(process.env.MONGODB_DB_NAME || 'oceanicas');
-      console.log('Base de datos NoSQL (MongoDB) conectada.');
-    });
+    mongoClient.connect()
+      .then(() => {
+        mongoDb = mongoClient.db(process.env.MONGODB_DB_NAME || 'oceanicas');
+        console.log('Base de datos NoSQL (MongoDB) conectada.');
+      })
+      .catch((err) => {
+        console.warn('No se pudo conectar a MongoDB, usando mock db.', err.message);
+      });
   } catch (e) {
     console.warn('Error inicializando MongoDB client, usando mock db.', e);
   }
