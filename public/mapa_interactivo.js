@@ -441,7 +441,6 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
               </div>
             )}
           </div>
-        </div>
 
           {/* Saldo de Bienvenida en Pantalla */}
           <div className="mt-8 bg-blue-950/60 p-4 rounded-xl border border-blue-900 flex justify-between items-center">
