@@ -479,7 +479,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#162b4e]/40 text-slate-800 flex flex-col font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-[#162b4e]/15 via-white to-blue-50/30 text-slate-800 flex flex-col font-sans">
       
       {/* Barra de Navegación Superior */}
       <header className="bg-[#162b4e] border-b border-blue-900 text-white px-6 py-4 flex items-center justify-between sticky top-0 z-40 shadow-md">
@@ -587,16 +587,6 @@ function App() {
             )}
           </div>
 
-          {/* Selector de Roles Simulado */}
-          <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-3">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 block">Simulador de Roles (RBAC)</span>
-            <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => handleLogin('cliente@oceanica.com')} className="px-2 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-[10px] font-bold shadow-sm">Cliente</button>
-              <button onClick={() => handleLogin('servicio@oceanica.com')} className="px-2 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-[10px] font-bold shadow-sm">Servicio</button>
-              <button onClick={() => handleLogin('gerente@oceanica.com')} className="px-2 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-[10px] font-bold shadow-sm">Gerente</button>
-              <button onClick={() => handleLogin('admin@oceanica.com')} className="px-2 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-[10px] font-bold shadow-sm">Admin</button>
-            </div>
-          </div>
         </aside>
 
         {/* Área de Contenido Principal */}
