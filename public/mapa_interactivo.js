@@ -2,6 +2,7 @@ const { useState, useEffect, useRef } = React;
 const { ComposableMap, Geographies, Geography } = window;
 
 window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleBookFlight, user }) {
+  console.log("Vuelos recibidos en MapaInteractivo:", vuelos);
   // Estados del Buscador Inteligente
   const [presupuesto, setPresupuesto] = useState(userBalance || 5000);
   const [gusto, setGusto] = useState('Todos');

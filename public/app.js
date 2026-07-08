@@ -66,6 +66,7 @@ function App() {
     try {
       const res = await fetch('/api/vuelos');
       const data = await res.json();
+      console.log("Vuelos cargados en app.js:", data);
       setVuelos(data);
     } catch (e) {
       console.error(e);
