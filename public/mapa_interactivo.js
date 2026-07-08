@@ -1,21 +1,88 @@
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 const { ComposableMap, Geographies, Geography } = window;
 
 window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleBookFlight, user }) {
   // Estados del Buscador Inteligente
-  const [presupuesto, setPresupuesto] = useState(5000);
+  const [presupuesto, setPresupuesto] = useState(userBalance || 5000);
   const [gusto, setGusto] = useState('Todos');
-  const [tiempoDisponible, setTiempoDisponible] = useState(72); // En horas
+  const [diasDisponibles, setDiasDisponibles] = useState(3);
+  const [diaSalida, setDiaSalida] = useState('2026-07-08');
   const [vuelosFiltrados, setVuelosFiltrados] = useState([]);
   const [paisSeleccionado, setPaisSeleccionado] = useState(null);
   const [paisHover, setPaisHover] = useState(null);
   const [soloNoVisitados, setSoloNoVisitados] = useState(false);
+  const [paisesVisitados, setPaisesVisitados] = useState(['Chile']);
+  const [modalPaisesOpen, setModalPaisesOpen] = useState(false);
+
+  useEffect(() => {
+    if (userBalance !== undefined) {
+      setPresupuesto(userBalance);
+    }
+  }, [userBalance]);
 
   // Estados y funciones para el control y medidor de zoom solicitado
   const [zoom, setZoom] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+  const mapContainerRef = useRef(null);
+
   const handleZoomIn = () => setZoom(z => Math.min(z + 0.5, 4));  // Máximo 400%
-  const handleZoomOut = () => setZoom(z => Math.max(z - 0.5, 1)); // Mínimo 100%
-  const handleReset = () => setZoom(1);
+  const handleZoomOut = () => {
+    setZoom(z => {
+      const nextZoom = Math.max(z - 0.5, 1);
+      if (nextZoom === 1) {
+        setPosition({ x: 0, y: 0 });
+      }
+      return nextZoom;
+    });
+  };
+  const handleReset = () => {
+    setZoom(1);
+    setPosition({ x: 0, y: 0 });
+  };
+
+  const handleMouseDown = (e) => {
+    if (zoom <= 1) return; // Sólo arrastrar si hay zoom
+    setIsDragging(true);
+    dragStart.current = { x: e.clientX - position.x, y: e.clientY - position.y };
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    setPosition({ x: e.clientX - dragStart.current.x, y: e.clientY - dragStart.current.y });
+  };
+
+  const handleMouseUpOrLeave = () => {
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    const container = mapContainerRef.current;
+    if (!container) return;
+
+    const handleNativeWheel = (e) => {
+      e.preventDefault();
+      const zoomFactor = 0.15;
+      setZoom(z => {
+        let nextZoom = z;
+        if (e.deltaY < 0) {
+          nextZoom = Math.min(z + zoomFactor, 4);
+        } else {
+          nextZoom = Math.max(z - zoomFactor, 1);
+        }
+        if (nextZoom === 1) {
+          setPosition({ x: 0, y: 0 });
+        }
+        return nextZoom;
+      });
+    };
+
+    container.addEventListener('wheel', handleNativeWheel, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', handleNativeWheel);
+    };
+  }, []);
 
   const mapName = (name) => {
     if (!name) return "";
@@ -77,7 +144,9 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
       };
     });
 
-    // ALGORITMO: Filtrar por Gusto, Presupuesto, No Visitados y calcular Tiempo Neto de Estancia
+    const tiempoDisponible = (parseInt(diasDisponibles) || 0) * 24;
+
+    // ALGORITMO: Filtrar por Gusto, Presupuesto, Día de Salida, No Visitados y calcular Tiempo Neto de Estancia
     const resultado = mapped.filter(vuelo => {
       const cumpleGusto = gusto === 'Todos' || vuelo.categoria_gustos === gusto;
       const cumplePresupuesto = vuelo.precio_monedas_oceanicas <= presupuesto;
@@ -85,11 +154,15 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
       // El tiempo de vuelo es ida y vuelta (multiplicado por 2)
       const tiempoVueloTotal = vuelo.tiempo_vuelo_horas * 2;
       const cumpleTiempo = tiempoDisponible > tiempoVueloTotal;
-      
-      // Filtrar por no visitados
-      const esNoVisitado = !soloNoVisitados || !user || !user.ciudadesVisitadas || !user.ciudadesVisitadas.includes(vuelo.ciudad_destino);
 
-      return cumpleGusto && cumplePresupuesto && cumpleTiempo && esNoVisitado;
+      // Filtrar por el día seleccionado en el calendario (YYYY-MM-DD)
+      const diaVuelo = vuelo.fecha_salida ? vuelo.fecha_salida.split('T')[0] : '';
+      const cumpleFecha = diaVuelo === diaSalida;
+      
+      // Filtrar por no visitados (según países gestionados en la ventana emergente)
+      const esNoVisitado = !soloNoVisitados || !paisesVisitados.includes(vuelo.pais_destino);
+
+      return cumpleGusto && cumplePresupuesto && cumpleTiempo && cumpleFecha && esNoVisitado;
     }).map(vuelo => {
       const tiempoVueloTotal = vuelo.tiempo_vuelo_horas * 2;
       const tiempoNetoVisita = tiempoDisponible - tiempoVueloTotal;
@@ -106,7 +179,7 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
 
   useEffect(() => {
     ejecutarBuscadorInteligente();
-  }, [presupuesto, gusto, tiempoDisponible, soloNoVisitados, vuelos, user]);
+  }, [presupuesto, gusto, diasDisponibles, diaSalida, soloNoVisitados, paisesVisitados, vuelos, user]);
 
   return (
     <div className="space-y-6">
@@ -132,11 +205,11 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
                   className="w-full bg-blue-950 border border-blue-800 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 text-white"
                 >
                   <option value="Todos">Cualquier experiencia</option>
-                  <option value="Playa">Playa 🏖️</option>
-                  <option value="Montaña">Montaña 🏔️</option>
-                  <option value="Desierto">Desierto 🌵</option>
-                  <option value="Historia">Historia 🏛️</option>
-                  <option value="Selva">Selva 🌴</option>
+                  <option value="Playa">Playa</option>
+                  <option value="Montaña">Montaña</option>
+                  <option value="Desierto">Desierto</option>
+                  <option value="Historia">Historia</option>
+                  <option value="Selva">Selva</option>
                 </select>
               </div>
 
@@ -147,7 +220,7 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
                   <span className="text-green-400 font-bold">{presupuesto} MO</span>
                 </div>
                 <input 
-                  type="range" min="200" max="5000" step="50"
+                  type="range" min="0" max={userBalance || 5000} step="50"
                   value={presupuesto}
                   onChange={(e) => setPresupuesto(parseInt(e.target.value))}
                   className="w-full accent-green-400 bg-blue-950 h-2 rounded-lg cursor-pointer"
@@ -156,30 +229,71 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
 
               {/* Filtro Tiempo Disponible */}
               <div>
-                <div className="flex justify-between text-xs font-semibold uppercase text-gray-300 mb-2">
-                  <span>Tiempo Total de Viaje</span>
-                  <span className="text-blue-300 font-bold">{tiempoDisponible} Horas</span>
-                </div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-300 mb-2">Días disponibles para viajar</label>
                 <input 
-                  type="range" min="12" max="168" step="4"
-                  value={tiempoDisponible}
-                  onChange={(e) => setTiempoDisponible(parseInt(e.target.value))}
-                  className="w-full accent-blue-400 bg-blue-950 h-2 rounded-lg cursor-pointer"
+                  type="number" min="1" max="30"
+                  value={diasDisponibles}
+                  onChange={(e) => setDiasDisponibles(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-full bg-blue-950 border border-blue-800 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 text-white"
                 />
               </div>
 
+              {/* Filtro Calendario de Salida */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-300 mb-2">Día planificado de salida</label>
+                <div className="grid grid-cols-5 gap-1 bg-blue-950 p-1.5 rounded-xl border border-blue-900">
+                  {[
+                    { label: 'Mié 8', value: '2026-07-08' },
+                    { label: 'Jue 9', value: '2026-07-09' },
+                    { label: 'Vie 10', value: '2026-07-10' },
+                    { label: 'Sáb 11', value: '2026-07-11' },
+                    { label: 'Dom 12', value: '2026-07-12' }
+                  ].map(day => (
+                    <button
+                      key={day.value}
+                      type="button"
+                      onClick={() => setDiaSalida(day.value)}
+                      className={`py-2 text-[11px] font-bold rounded-lg transition-all ${
+                        diaSalida === day.value 
+                          ? 'bg-emerald-500 text-slate-950 shadow' 
+                          : 'text-gray-400 hover:text-white hover:bg-blue-900/50'
+                      }`}
+                    >
+                      {day.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Filtro Sólo No Visitados */}
-              <div className="flex items-center space-x-3 py-2 border-t border-blue-900/50 mt-4">
-                <input 
-                  type="checkbox" 
-                  id="soloNoVisitadosMap" 
-                  checked={soloNoVisitados}
-                  onChange={e => setSoloNoVisitados(e.target.checked)}
-                  className="w-4 h-4 rounded border-blue-800 text-blue-600 focus:ring-blue-500 bg-blue-950"
-                />
-                <label htmlFor="soloNoVisitadosMap" className="text-xs font-semibold text-gray-300 cursor-pointer select-none">
-                  Mostrar sólo destinos no visitados
-                </label>
+              <div className="flex items-center justify-between py-2 border-t border-blue-900/50 mt-4">
+                <div className="flex items-center space-x-3">
+                  <input 
+                    type="checkbox" 
+                    id="soloNoVisitadosMap" 
+                    checked={soloNoVisitados}
+                    onChange={e => {
+                      const checked = e.target.checked;
+                      setSoloNoVisitados(checked);
+                      if (checked) {
+                        setModalPaisesOpen(true);
+                      }
+                    }}
+                    className="w-4 h-4 rounded border-blue-800 text-blue-600 focus:ring-blue-500 bg-blue-950"
+                  />
+                  <label htmlFor="soloNoVisitadosMap" className="text-xs font-semibold text-gray-300 cursor-pointer select-none">
+                    Mostrar sólo destinos no visitados
+                  </label>
+                </div>
+                {soloNoVisitados && (
+                  <button 
+                    type="button"
+                    onClick={() => setModalPaisesOpen(true)}
+                    className="text-[10px] bg-blue-900/60 hover:bg-blue-850 text-blue-300 px-2 py-1 rounded font-bold border border-blue-800/80 transition"
+                  >
+                    Editar
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -216,7 +330,7 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
               </span>
               {paisSeleccionado && (
                 <span className="text-[11px] bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-full font-bold animate-pulse">
-                  📍 Vuelos a {paisSeleccionado} enfocados
+                  Vuelos a {paisSeleccionado} enfocados
                 </span>
               )}
             </div>
@@ -250,8 +364,20 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
               </button>
             </div>
 
-            {/* Contenedor SVG con transform de escala */}
-            <div className="w-full flex items-center justify-center overflow-hidden transition-transform duration-300 ease-out origin-center" style={{ transform: `scale(${zoom})` }}>
+            {/* Contenedor SVG con transform de escala y traslación para movimiento */}
+            <div 
+              ref={mapContainerRef}
+              className="w-full flex items-center justify-center overflow-hidden origin-center select-none" 
+              style={{ 
+                transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`, 
+                cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
+                transition: isDragging ? 'none' : 'transform 0.2s ease-out'
+              }}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUpOrLeave}
+              onMouseLeave={handleMouseUpOrLeave}
+            >
               <ComposableMap
                 projectionConfig={{
                   scale: 235,
@@ -353,7 +479,6 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
 
                   {/* Margen de advertencia por retrasos */}
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-[11px] text-amber-700 leading-normal flex items-start space-x-1.5">
-                    <span className="text-sm">⚠️</span>
                     <span>Colchón para retrasos estimado: <strong>+{vuelo.riesgoRetrasoHoras}h</strong> recomendado.</span>
                   </div>
                 </div>
@@ -376,6 +501,56 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
           )}
         </div>
       </div>
+
+      {/* VENTANA EMERGENTE (MODAL) PARA SELECCIONAR PAÍSES VISITADOS */}
+      {modalPaisesOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 bg-[#162b4e] text-white flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold">Destinos Visitados</h3>
+                <p className="text-xs text-blue-200">Marca los países que ya has visitado para excluirlos</p>
+              </div>
+              <button 
+                onClick={() => setModalPaisesOpen(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-950/50 hover:bg-blue-950 text-white font-bold transition"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-6 space-y-4 max-h-[300px] overflow-y-auto">
+              {Object.keys(window.PAISES_DATA || {}).map(pais => {
+                const isVisited = paisesVisitados.includes(pais);
+                return (
+                  <label key={pais} className="flex items-center space-x-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 border border-slate-200/60 cursor-pointer select-none transition">
+                    <input 
+                      type="checkbox"
+                      checked={isVisited}
+                      onChange={() => {
+                        if (isVisited) {
+                          setPaisesVisitados(paisesVisitados.filter(p => p !== pais));
+                        } else {
+                          setPaisesVisitados([...paisesVisitados, pais]);
+                        }
+                      }}
+                      className="w-5 h-5 rounded border-slate-300 text-emerald-500 focus:ring-emerald-400 bg-white"
+                    />
+                    <span className="text-sm font-bold text-slate-700">{pais}</span>
+                  </label>
+                );
+              })}
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+              <button 
+                onClick={() => setModalPaisesOpen(false)}
+                className="px-5 py-2.5 bg-[#162b4e] hover:bg-blue-950 text-white text-xs font-bold rounded-xl transition duration-150 shadow"
+              >
+                Confirmar y Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

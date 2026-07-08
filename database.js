@@ -1170,36 +1170,29 @@ const mockDb = {
   ]
 };
 
-let useMock = true;
-let pgPool = null;
-let mongoClient = null;
-let mongoDb = null;
+const supabase = require('./db/supabase');
+const connectMongoose = require('./db/mongoose');
+const SearchHistory = require('./db/models/searchHistory');
+const TicketEscalation = require('./db/models/ticketEscalation');
 
-// Intentar configurar base de datos real si existen variables de entorno
-if (process.env.DATABASE_URL) {
-  try {
-    pgPool = new Pool({ connectionString: process.env.DATABASE_URL });
-    useMock = false;
-    console.log('Base de datos SQL (PostgreSQL) configurada.');
-  } catch (e) {
-    console.warn('Error inicializando Pool PostgreSQL, usando mock db.', e);
-  }
+let useMock = true;
+let useMongo = false;
+
+if (supabase) {
+  useMock = false;
+  console.log('Base de datos SQL (Supabase SDK) configurada.');
+} else {
+  console.log('Iniciando en modo MOCK para base de datos relacional.');
 }
 
 if (process.env.MONGODB_URI) {
-  try {
-    mongoClient = new MongoClient(process.env.MONGODB_URI);
-    mongoClient.connect()
-      .then(() => {
-        mongoDb = mongoClient.db(process.env.MONGODB_DB_NAME || 'oceanicas');
-        console.log('Base de datos NoSQL (MongoDB) conectada.');
-      })
-      .catch((err) => {
-        console.warn('No se pudo conectar a MongoDB, usando mock db.', err.message);
-      });
-  } catch (e) {
-    console.warn('Error inicializando MongoDB client, usando mock db.', e);
-  }
+  connectMongoose()
+    .then(() => {
+      useMongo = true;
+    })
+    .catch((err) => {
+      console.warn('No se pudo conectar a MongoDB vía Mongoose, usando mock db en memoria.', err.message);
+    });
 }
 
 // Interfaces unificadas de base de datos
@@ -1209,16 +1202,26 @@ const db = {
     if (useMock) {
       return mockDb.usuarios.find(u => u.google_id === googleId) || null;
     }
-    const res = await pgPool.query('SELECT * FROM usuarios WHERE google_id = $1', [googleId]);
-    return res.rows[0] || null;
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('*')
+      .eq('google_id', googleId)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
   },
 
   async getUsuarioById(id) {
     if (useMock) {
       return mockDb.usuarios.find(u => u.id === Number(id)) || null;
     }
-    const res = await pgPool.query('SELECT * FROM usuarios WHERE id = $1', [id]);
-    return res.rows[0] || null;
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
   },
 
   async crearTransaccion(usuarioId, tipo, monto, descripcion) {
@@ -1233,11 +1236,10 @@ const db = {
       });
       return;
     }
-    await pgPool.query(
-      `INSERT INTO transacciones (usuario_id, tipo, monto, descripcion)
-       VALUES ($1, $2, $3, $4)`,
-      [usuarioId, tipo, monto, descripcion]
-    );
+    const { error } = await supabase
+      .from('transacciones')
+      .insert([{ usuario_id: usuarioId, tipo, monto, descripcion }]);
+    if (error) throw error;
   },
 
   async crearUsuario(googleId, email, nombre, avatar) {
@@ -1265,28 +1267,19 @@ const db = {
       return nuevoUsuario;
     }
 
-    const client = await pgPool.connect();
-    try {
-      await client.query('BEGIN');
-      const insertUser = await client.query(
-        `INSERT INTO usuarios (google_id, email, nombre, avatar, saldo_monedas, rol)
-         VALUES ($1, $2, $3, $4, 5000.00, 'Cliente') RETURNING *`,
-        [googleId, email, nombre, avatar]
-      );
-      const user = insertUser.rows[0];
-      await client.query(
-        `INSERT INTO transacciones (usuario_id, tipo, monto, descripcion)
-         VALUES ($1, 'Bono Bienvenida', 5000.00, 'Inyección inicial por registro de nuevo usuario')`,
-        [user.id]
-      );
-      await client.query('COMMIT');
-      return user;
-    } catch (e) {
-      await client.query('ROLLBACK');
-      throw e;
-    } finally {
-      client.release();
-    }
+    const { data: user, error: userErr } = await supabase
+      .from('usuarios')
+      .insert([{ google_id: googleId, email, nombre, avatar, saldo_monedas: 5000.00, rol: 'Cliente' }])
+      .select()
+      .single();
+    if (userErr) throw userErr;
+
+    const { error: txErr } = await supabase
+      .from('transacciones')
+      .insert([{ usuario_id: user.id, tipo: 'Bono Bienvenida', monto: 5000.00, descripcion: 'Inyección inicial por registro de nuevo usuario' }]);
+    if (txErr) throw txErr;
+
+    return user;
   },
 
   async actualizarSaldo(usuarioId, nuevoSaldo) {
@@ -1295,8 +1288,14 @@ const db = {
       if (user) user.saldo_monedas = nuevoSaldo;
       return user;
     }
-    const res = await pgPool.query('UPDATE usuarios SET saldo_monedas = $1 WHERE id = $2 RETURNING *', [nuevoSaldo, usuarioId]);
-    return res.rows[0];
+    const { data, error } = await supabase
+      .from('usuarios')
+      .update({ saldo_monedas: nuevoSaldo })
+      .eq('id', usuarioId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   },
 
   async actualizarRol(usuarioId, nuevoRol) {
@@ -1305,8 +1304,14 @@ const db = {
       if (user) user.rol = nuevoRol;
       return user;
     }
-    const res = await pgPool.query('UPDATE usuarios SET rol = $1 WHERE id = $2 RETURNING *', [nuevoRol, usuarioId]);
-    return res.rows[0];
+    const { data, error } = await supabase
+      .from('usuarios')
+      .update({ rol: nuevoRol })
+      .eq('id', usuarioId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   },
 
   // --- VUELOS ---
@@ -1314,16 +1319,24 @@ const db = {
     if (useMock) {
       return mockDb.vuelos;
     }
-    const res = await pgPool.query('SELECT * FROM vuelos');
-    return res.rows;
+    const { data, error } = await supabase
+      .from('vuelos')
+      .select('*');
+    if (error) throw error;
+    return data;
   },
 
   async getVueloById(id) {
     if (useMock) {
       return mockDb.vuelos.find(v => v.id === Number(id)) || null;
     }
-    const res = await pgPool.query('SELECT * FROM vuelos WHERE id = $1', [id]);
-    return res.rows[0] || null;
+    const { data, error } = await supabase
+      .from('vuelos')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
   },
 
   async actualizarItinerario(vueloId, fechaSalida, fechaLlegada, precio) {
@@ -1336,15 +1349,19 @@ const db = {
       }
       return vuelo;
     }
-    const res = await pgPool.query(
-      `UPDATE vuelos 
-       SET fecha_salida = COALESCE($1, fecha_salida), 
-           fecha_llegada = COALESCE($2, fecha_llegada), 
-           precio_monedas = COALESCE($3, precio_monedas) 
-       WHERE id = $4 RETURNING *`,
-      [fechaSalida, fechaLlegada, precio, vueloId]
-    );
-    return res.rows[0];
+    const updates = {};
+    if (fechaSalida) updates.fecha_salida = fechaSalida;
+    if (fechaLlegada) updates.fecha_llegada = fechaLlegada;
+    if (precio) updates.precio_monedas = precio;
+
+    const { data, error } = await supabase
+      .from('vuelos')
+      .update(updates)
+      .eq('id', vueloId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   },
 
   async crearReserva(usuarioId, vueloId, monto) {
@@ -1378,39 +1395,37 @@ const db = {
       return nuevaReserva;
     }
 
-    const client = await pgPool.connect();
-    try {
-      await client.query('BEGIN');
-      // Obtener saldo con lock
-      const userQuery = await client.query('SELECT saldo_monedas FROM usuarios WHERE id = $1 FOR UPDATE', [usuarioId]);
-      const user = userQuery.rows[0];
-      if (!user || parseFloat(user.saldo_monedas) < parseFloat(monto)) {
-        throw new Error('Saldo insuficiente o usuario no existe.');
-      }
-      const nuevoSaldo = parseFloat(user.saldo_monedas) - parseFloat(monto);
-      await client.query('UPDATE usuarios SET saldo_monedas = $1 WHERE id = $2', [nuevoSaldo, usuarioId]);
-      
-      const insertReserva = await client.query(
-        `INSERT INTO reservas (usuario_id, vuelo_id, monto_pagado, estado)
-         VALUES ($1, $2, $3, 'Confirmado') RETURNING *`,
-        [usuarioId, vueloId, monto]
-      );
+    const { data: user, error: userErr } = await supabase
+      .from('usuarios')
+      .select('saldo_monedas')
+      .eq('id', usuarioId)
+      .single();
+    if (userErr || !user) throw new Error('Usuario no encontrado.');
 
-      // Registrar transacción
-      await client.query(
-        `INSERT INTO transacciones (usuario_id, tipo, monto, descripcion)
-         VALUES ($1, 'Compra Vuelo', $2, $3)`,
-        [usuarioId, -monto, `Reserva de vuelo ID ${vueloId}`]
-      );
-
-      await client.query('COMMIT');
-      return insertReserva.rows[0];
-    } catch (e) {
-      await client.query('ROLLBACK');
-      throw e;
-    } finally {
-      client.release();
+    if (parseFloat(user.saldo_monedas) < parseFloat(monto)) {
+      throw new Error('Saldo insuficiente.');
     }
+
+    const nuevoSaldo = parseFloat(user.saldo_monedas) - parseFloat(monto);
+    const { error: updateErr } = await supabase
+      .from('usuarios')
+      .update({ saldo_monedas: nuevoSaldo })
+      .eq('id', usuarioId);
+    if (updateErr) throw updateErr;
+
+    const { data: reserva, error: resErr } = await supabase
+      .from('reservas')
+      .insert([{ usuario_id: usuarioId, vuelo_id: vueloId, monto_pagado: monto, estado: 'Confirmado' }])
+      .select()
+      .single();
+    if (resErr) throw resErr;
+
+    const { error: txErr } = await supabase
+      .from('transacciones')
+      .insert([{ usuario_id: usuarioId, tipo: 'Compra Vuelo', monto: -monto, descripcion: `Reserva de vuelo ID ${vueloId}` }]);
+    if (txErr) throw txErr;
+
+    return reserva;
   },
 
   // --- PARKING ---
@@ -1418,12 +1433,14 @@ const db = {
     if (useMock) {
       return Object.values(mockDb.parking);
     }
-    const res = await pgPool.query('SELECT * FROM parking_slots');
-    return res.rows;
+    const { data, error } = await supabase
+      .from('parking_slots')
+      .select('*');
+    if (error) throw error;
+    return data;
   },
 
   async actualizarTarifaParking(nuevaTarifa) {
-    // Si es mock se almacena en memoria global
     global.tarifaParking = nuevaTarifa || 20.00;
     return global.tarifaParking;
   },
@@ -1460,45 +1477,55 @@ const db = {
       return slot;
     }
 
-    const client = await pgPool.connect();
-    try {
-      await client.query('BEGIN');
-      const userRes = await client.query('SELECT saldo_monedas FROM usuarios WHERE id = $1 FOR UPDATE', [usuarioId]);
-      const user = userRes.rows[0];
-      if (!user || parseFloat(user.saldo_monedas) < tarifa) {
-        throw new Error('Saldo insuficiente o usuario no encontrado.');
-      }
-      
-      const slotRes = await client.query('SELECT * FROM parking_slots WHERE identificador_plaza = $1 FOR UPDATE', [plazaId]);
-      const slot = slotRes.rows[0];
-      if (!slot || slot.estado === 'Ocupado') {
-        throw new Error('Plaza no disponible o inexistente.');
-      }
-
-      const nuevoSaldo = parseFloat(user.saldo_monedas) - tarifa;
-      await client.query('UPDATE usuarios SET saldo_monedas = $1 WHERE id = $2', [nuevoSaldo, usuarioId]);
-      
-      const updateSlot = await client.query(
-        `UPDATE parking_slots 
-         SET estado = 'Ocupado', usuario_id = $1, fecha_entrada = NOW(), ultimo_cargo = NOW() 
-         WHERE identificador_plaza = $2 RETURNING *`,
-        [usuarioId, plazaId]
-      );
-
-      await client.query(
-        `INSERT INTO transacciones (usuario_id, tipo, monto, descripcion)
-         VALUES ($1, 'Reserva Parking', $2, $3)`,
-        [usuarioId, -tarifa, `Cargo inicial de entrada - Plaza ${plazaId}`]
-      );
-
-      await client.query('COMMIT');
-      return updateSlot.rows[0];
-    } catch (e) {
-      await client.query('ROLLBACK');
-      throw e;
-    } finally {
-      client.release();
+    const { data: user, error: userErr } = await supabase
+      .from('usuarios')
+      .select('saldo_monedas')
+      .eq('id', usuarioId)
+      .single();
+    if (userErr || !user) throw new Error('Usuario no encontrado o inexistente.');
+    if (parseFloat(user.saldo_monedas) < tarifa) {
+      throw new Error('Saldo insuficiente para el primer día de parking.');
     }
+
+    const { data: slot, error: slotErr } = await supabase
+      .from('parking_slots')
+      .select('*')
+      .eq('identificador_plaza', plazaId)
+      .single();
+    if (slotErr || !slot) throw new Error('Plaza no encontrada.');
+    if (slot.estado === 'Ocupado') throw new Error('La plaza ya está ocupada.');
+
+    const nuevoSaldo = parseFloat(user.saldo_monedas) - tarifa;
+    const { error: updateU } = await supabase
+      .from('usuarios')
+      .update({ saldo_monedas: nuevoSaldo })
+      .eq('id', usuarioId);
+    if (updateU) throw updateU;
+
+    const { data: updatedSlot, error: updateSlotErr } = await supabase
+      .from('parking_slots')
+      .update({
+        estado: 'Ocupado',
+        usuario_id: usuarioId,
+        fecha_entrada: new Date().toISOString(),
+        ultimo_cargo: new Date().toISOString()
+      })
+      .eq('identificador_plaza', plazaId)
+      .select()
+      .single();
+    if (updateSlotErr) throw updateSlotErr;
+
+    const { error: txErr } = await supabase
+      .from('transacciones')
+      .insert([{
+        usuario_id: usuarioId,
+        tipo: 'Reserva Parking',
+        monto: -tarifa,
+        descripcion: `Cargo inicial de entrada - Plaza ${plazaId}`
+      }]);
+    if (txErr) throw txErr;
+
+    return updatedSlot;
   },
 
   async qrPlaza(usuarioId, plazaId) {
@@ -1510,11 +1537,13 @@ const db = {
       }
       return { success: true, message: `Plaza ${plazaId} vinculada y confirmada físicamente.` };
     }
-    const res = await pgPool.query(
-      'SELECT * FROM parking_slots WHERE identificador_plaza = $1 AND usuario_id = $2',
-      [plazaId, usuarioId]
-    );
-    if (res.rows.length === 0) {
+    const { data, error } = await supabase
+      .from('parking_slots')
+      .select('*')
+      .eq('identificador_plaza', plazaId)
+      .eq('usuario_id', usuarioId)
+      .maybeSingle();
+    if (error || !data) {
       throw new Error('Vinculación física no válida.');
     }
     return { success: true, message: `Plaza ${plazaId} confirmada.` };
@@ -1527,23 +1556,25 @@ const db = {
       if (slot.usuario_id !== Number(usuarioId)) {
         throw new Error('El usuario no coincide con la ocupación de esta plaza.');
       }
-      
-      // Liberar plaza
       slot.estado = 'Libre';
       slot.usuario_id = null;
       slot.fecha_entrada = null;
       slot.ultimo_cargo = null;
-
       return { success: true, message: 'Salida exitosa y plaza liberada.' };
     }
-
-    const res = await pgPool.query(
-      `UPDATE parking_slots 
-       SET estado = 'Libre', usuario_id = NULL, fecha_entrada = NULL, ultimo_cargo = NULL
-       WHERE identificador_plaza = $1 AND usuario_id = $2 RETURNING *`,
-      [plazaId, usuarioId]
-    );
-    if (res.rows.length === 0) {
+    const { data, error } = await supabase
+      .from('parking_slots')
+      .update({
+        estado: 'Libre',
+        usuario_id: null,
+        fecha_entrada: null,
+        ultimo_cargo: null
+      })
+      .eq('identificador_plaza', plazaId)
+      .eq('usuario_id', usuarioId)
+      .select()
+      .maybeSingle();
+    if (error || !data) {
       throw new Error('No se pudo validar la salida o el usuario no está al día.');
     }
     return { success: true, message: 'Salida exitosa y plaza liberada.' };
@@ -1551,8 +1582,13 @@ const db = {
 
   // --- MONGO DB MOCKS / WRAPPERS ---
   async registrarBusqueda(searchRecord) {
-    if (mongoDb) {
-      await mongoDb.collection('search_history').insertOne(searchRecord);
+    if (useMongo) {
+      try {
+        const doc = new SearchHistory(searchRecord);
+        await doc.save();
+      } catch (err) {
+        console.error('Error al registrar búsqueda en MongoDB:', err.message);
+      }
     } else {
       mockDb.searchHistory.push({
         _id: 'mock_search_' + Date.now(),
@@ -1563,23 +1599,38 @@ const db = {
   },
 
   async getHistorialBusquedas() {
-    if (mongoDb) {
-      return await mongoDb.collection('search_history').find().toArray();
+    if (useMongo) {
+      try {
+        return await SearchHistory.find().lean();
+      } catch (err) {
+        console.error('Error al obtener búsquedas de MongoDB:', err.message);
+        return [];
+      }
     }
     return mockDb.searchHistory;
   },
 
   async registrarEscalacion(incidencia) {
-    if (mongoDb) {
-      await mongoDb.collection('ticket_escalations').insertOne(incidencia);
+    if (useMongo) {
+      try {
+        const doc = new TicketEscalation(incidencia);
+        await doc.save();
+      } catch (err) {
+        console.error('Error al registrar escalación en MongoDB:', err.message);
+      }
     } else {
       mockDb.ticketEscalations.push(incidencia);
     }
   },
 
   async getEscalaciones() {
-    if (mongoDb) {
-      return await mongoDb.collection('ticket_escalations').find().toArray();
+    if (useMongo) {
+      try {
+        return await TicketEscalation.find().lean();
+      } catch (err) {
+        console.error('Error al obtener incidencias de MongoDB:', err.message);
+        return [];
+      }
     }
     return mockDb.ticketEscalations;
   },
@@ -1593,14 +1644,18 @@ const db = {
       fecha: new Date().toISOString()
     };
 
-    if (mongoDb) {
-      await mongoDb.collection('ticket_escalations').updateOne(
-        { ticket_codigo: ticketId },
-        {
-          $set: { estado_actual: nuevoEstado },
-          $push: { historial_estados: logItem }
-        }
-      );
+    if (useMongo) {
+      try {
+        await TicketEscalation.updateOne(
+          { ticket_codigo: ticketId },
+          {
+            $set: { estado_actual: nuevoEstado },
+            $push: { historial_estados: logItem }
+          }
+        );
+      } catch (err) {
+        console.error('Error al actualizar estado de escalación en MongoDB:', err.message);
+      }
     } else {
       const ticket = mockDb.ticketEscalations.find(t => t.ticket_codigo === ticketId);
       if (ticket) {

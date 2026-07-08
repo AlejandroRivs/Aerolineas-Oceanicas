@@ -25,6 +25,9 @@ function App() {
   const [escalarComentario, setEscalarComentario] = useState("");
   const [activeTicketForEscalation, setActiveTicketForEscalation] = useState("");
 
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+
   // Cargar sesión al iniciar
   useEffect(() => {
     fetchSession();
@@ -89,6 +92,28 @@ function App() {
       setMyOcupation(mySlot || null);
     }
   }, [user, parkingSlots]);
+
+  // Manejador de Login con correo y contraseña
+  const handlePasswordLogin = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginEmail, password: loginPassword })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUser(data.user);
+        fetchParking();
+        fetchIncidencias();
+      } else {
+        alert(data.error);
+      }
+    } catch (err) {
+      alert("Error al iniciar sesión: " + err.message);
+    }
+  };
 
   // Manejador de Login de simulación
   const handleLogin = async (roleEmail) => {
@@ -338,18 +363,86 @@ function App() {
     );
   }
 
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#162b4e]/40 p-4 font-sans">
+        <div className="w-full max-w-md bg-[#162b4e] border border-blue-900/80 p-8 rounded-3xl shadow-2xl relative overflow-hidden text-white">
+          {/* Glow effect */}
+          <div className="absolute -top-16 -left-16 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-16 -right-16 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl"></div>
+
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-600/10 text-blue-400 border border-blue-500/30 mb-4">
+              <i data-lucide="shield-check" className="w-8 h-8 text-emerald-400"></i>
+            </div>
+            <h1 className="text-2xl font-extrabold tracking-tight">Inicio de Sesión</h1>
+            <p className="text-xs text-blue-200 mt-2">Ingrese sus credenciales de rol o use Google para acceder.</p>
+          </div>
+
+          <form onSubmit={handlePasswordLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-blue-300 mb-2">Correo Electrónico</label>
+              <input 
+                type="email" 
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                required 
+                placeholder="usuario@oceanica.com" 
+                className="w-full bg-slate-900/60 border border-blue-900/60 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-slate-500 transition duration-150 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-blue-300 mb-2">Contraseña</label>
+              <input 
+                type="password" 
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                required 
+                placeholder="••••••••" 
+                className="w-full bg-slate-900/60 border border-blue-900/60 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-slate-500 transition duration-150 text-sm"
+              />
+            </div>
+            
+            <button 
+              type="submit" 
+              className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl transition duration-200 shadow-lg flex items-center justify-center space-x-2 text-sm"
+            >
+              <span>Ingresar</span>
+            </button>
+          </form>
+
+          <div className="relative my-6 flex items-center">
+            <div className="flex-grow border-t border-blue-900/60"></div>
+            <span className="flex-shrink mx-4 text-xs text-blue-300 uppercase font-semibold">O</span>
+            <div className="flex-grow border-t border-blue-900/60"></div>
+          </div>
+
+          <button 
+            onClick={handleGoogleLoginSimulated}
+            className="w-full py-3 bg-white hover:bg-slate-100 text-[#162b4e] font-bold rounded-xl transition duration-150 text-xs shadow-md flex items-center justify-center space-x-2 border border-slate-200"
+          >
+            <svg className="w-4 h-4 fill-current text-rose-500" viewBox="0 0 24 24">
+              <path d="M12.24 10.285V13.4h6.887c-.648 2.41-2.519 4.113-5.136 4.113-3.44 0-6.228-2.77-6.228-6.19 0-3.42 2.787-6.19 6.228-6.19 1.493 0 2.87.52 3.96 1.488l2.45-2.45c-1.724-1.616-3.99-2.6-6.41-2.6C7.14 1.666 3 5.807 3 10.909c0 5.103 4.14 9.243 9.24 9.243 5.34 0 9.07-3.754 9.07-9.224 0-.61-.065-1.196-.183-1.643H12.24z"/>
+            </svg>
+            <span>Acceder con Google</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#162b4e]/40 text-slate-800 flex flex-col font-sans">
       
-      {/* Barra de Navegación Superior (Whitened and Clean) */}
-      <header className="bg-white border-b border-slate-200 text-slate-900 px-6 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm">
+      {/* Barra de Navegación Superior */}
+      <header className="bg-[#162b4e] border-b border-blue-900 text-white px-6 py-4 flex items-center justify-between sticky top-0 z-40 shadow-md">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-[#162b4e] flex items-center justify-center font-extrabold text-lg text-white shadow-md">
+          <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center font-extrabold text-lg text-[#162b4e] shadow-md">
             AO
           </div>
           <div>
-            <span className="font-extrabold text-lg block tracking-wide text-slate-800 leading-tight">AEROLÍNEAS OCEÁNICAS</span>
-            <span className="text-xs text-slate-500 font-medium tracking-wider uppercase">Plataforma Aeroportuaria</span>
+            <span className="font-extrabold text-lg block tracking-wide text-white leading-tight">AEROLÍNEAS OCEÁNICAS</span>
+            <span className="text-xs text-blue-200 font-medium tracking-wider uppercase">Plataforma Aeroportuaria</span>
           </div>
         </div>
 
@@ -358,20 +451,20 @@ function App() {
           {user ? (
             <div className="flex items-center space-x-4">
               <div className="text-right hidden sm:block">
-                <span className="font-bold text-sm block text-slate-800">{user.nombre}</span>
+                <span className="font-bold text-sm block text-white">{user.nombre}</span>
                 <div className="flex items-center justify-end space-x-2">
-                  <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold border border-slate-200">
+                  <span className="px-2 py-0.5 rounded-full bg-blue-950 text-blue-200 text-[10px] font-bold border border-blue-800">
                     {user.rol}
                   </span>
-                  <span className="font-bold text-xs text-emerald-600">
-                    💰 {parseFloat(user.saldo).toLocaleString()} MO
+                  <span className="font-bold text-xs text-emerald-400">
+                    Saldo: {parseFloat(user.saldo).toLocaleString()} MO
                   </span>
                 </div>
               </div>
               <img 
                 src={user.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.nombre}`} 
                 alt="Avatar" 
-                className="w-10 h-10 rounded-xl border border-slate-200 bg-slate-900 shadow-sm"
+                className="w-10 h-10 rounded-xl border border-blue-850 bg-slate-900 shadow-sm"
               />
               <button 
                 onClick={handleLogout}
@@ -400,37 +493,37 @@ function App() {
       <div className="flex-1 flex flex-col md:flex-row">
         
         {/* Barra Lateral de Navegación */}
-        <aside className="w-full md:w-64 border-r border-slate-200 bg-white p-6 space-y-6 flex flex-col justify-between shadow-sm">
+        <aside className="w-full md:w-64 border-r border-blue-900 bg-[#162b4e] p-6 space-y-6 flex flex-col justify-between shadow-sm">
           <div className="space-y-2">
-            <span className="text-[10px] uppercase font-bold tracking-widest text-[#162b4e] block mb-4">Menú de Navegación</span>
+            <span className="text-[10px] uppercase font-bold tracking-widest text-blue-200 block mb-4">Menú de Navegación</span>
             
             <button 
               onClick={() => setActiveTab("mapa")}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-bold text-sm transition duration-150 ${
-                activeTab === "mapa" ? "bg-slate-100 text-[#162b4e] border-l-4 border-[#162b4e] shadow-sm" : "hover:bg-slate-50 text-slate-600 hover:text-[#162b4e]"
+                activeTab === "mapa" ? "bg-slate-100 text-[#162b4e] border-l-4 border-[#162b4e] shadow-sm" : "hover:bg-blue-900/40 text-white hover:text-white"
               }`}
             >
-              <i data-lucide="map" className="w-4 h-4 text-[#162b4e]"></i>
+              <i data-lucide="map" className={`w-4 h-4 ${activeTab === "mapa" ? "text-[#162b4e]" : "text-white"}`}></i>
               <span>Mapa & Vuelos</span>
             </button>
 
             <button 
               onClick={() => setActiveTab("parking")}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-bold text-sm transition duration-150 ${
-                activeTab === "parking" ? "bg-slate-100 text-[#162b4e] border-l-4 border-[#162b4e] shadow-sm" : "hover:bg-slate-50 text-slate-600 hover:text-[#162b4e]"
+                activeTab === "parking" ? "bg-slate-100 text-[#162b4e] border-l-4 border-[#162b4e] shadow-sm" : "hover:bg-blue-900/40 text-white hover:text-white"
               }`}
             >
-              <i data-lucide="square-parking" className="w-4 h-4 text-[#162b4e]"></i>
+              <i data-lucide="square-parking" className={`w-4 h-4 ${activeTab === "parking" ? "text-[#162b4e]" : "text-white"}`}></i>
               <span>Aparcamiento QR</span>
             </button>
 
             <button 
               onClick={() => setActiveTab("incidencias")}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-bold text-sm transition duration-150 ${
-                activeTab === "incidencias" ? "bg-slate-100 text-[#162b4e] border-l-4 border-[#162b4e] shadow-sm" : "hover:bg-slate-50 text-slate-600 hover:text-[#162b4e]"
+                activeTab === "incidencias" ? "bg-slate-100 text-[#162b4e] border-l-4 border-[#162b4e] shadow-sm" : "hover:bg-blue-900/40 text-white hover:text-white"
               }`}
             >
-              <i data-lucide="ticket" className="w-4 h-4 text-[#162b4e]"></i>
+              <i data-lucide="ticket" className={`w-4 h-4 ${activeTab === "incidencias" ? "text-[#162b4e]" : "text-white"}`}></i>
               <span>Soporte / Escalación</span>
             </button>
 
@@ -438,10 +531,10 @@ function App() {
               <button 
                 onClick={() => setActiveTab("admin")}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-bold text-sm transition duration-150 ${
-                  activeTab === "admin" ? "bg-slate-100 text-[#162b4e] border-l-4 border-[#162b4e] shadow-sm" : "hover:bg-slate-50 text-slate-600 hover:text-[#162b4e]"
+                  activeTab === "admin" ? "bg-slate-100 text-[#162b4e] border-l-4 border-[#162b4e] shadow-sm" : "hover:bg-blue-900/40 text-white hover:text-white"
                 }`}
               >
-                <i data-lucide="shield" className="w-4 h-4 text-[#162b4e]"></i>
+                <i data-lucide="shield" className={`w-4 h-4 ${activeTab === "admin" ? "text-[#162b4e]" : "text-white"}`}></i>
                 <span>Consola Admin</span>
               </button>
             )}

@@ -86,6 +86,39 @@ router.get('/api/gatekeeper/status', async (ctx) => {
 
 // --- RUTAS DE AUTENTICACIÓN ---
 
+// Login con correo y contraseña
+router.post('/api/auth/login', async (ctx) => {
+  const { email, password } = ctx.request.body;
+
+  const validCredentials = {
+    'cliente@oceanica.com': { password: 'cliente123', googleId: 'mock_google_id_1' },
+    'servicio@oceanica.com': { password: 'servicio123', googleId: 'mock_google_id_2' },
+    'gerente@oceanica.com': { password: 'gerente123', googleId: 'mock_google_id_3' },
+    'admin@oceanica.com': { password: 'admin123', googleId: 'mock_google_id_4' }
+  };
+
+  const cred = validCredentials[email];
+  if (cred && cred.password === password) {
+    const user = await db.getUsuarioByGoogleId(cred.googleId);
+    if (user) {
+      ctx.session.user = {
+        id: user.id,
+        email: user.email,
+        nombre: user.nombre,
+        rol: user.rol,
+        saldo: user.saldo_monedas,
+        ciudadesVisitadas: user.ciudadesVisitadas || []
+      };
+      ctx.status = 200;
+      ctx.body = { success: true, user: ctx.session.user };
+      return;
+    }
+  }
+
+  ctx.status = 401;
+  ctx.body = { error: 'Credenciales inválidas. Por favor intente de nuevo.' };
+});
+
 // Login de simulación (para pruebas directas sin Google Auth)
 router.post('/api/auth/mock-login', async (ctx) => {
   const { email } = ctx.request.body;
