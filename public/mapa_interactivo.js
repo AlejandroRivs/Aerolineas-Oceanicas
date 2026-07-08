@@ -14,6 +14,14 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
   const [paisesVisitados, setPaisesVisitados] = useState(['Chile']);
   const [modalPaisesOpen, setModalPaisesOpen] = useState(false);
 
+  // Estados de Pestañas y Búsqueda General
+  const [searchTab, setSearchTab] = useState('inteligente'); // 'inteligente' o 'general'
+  const [origenInteligente, setOrigenInteligente] = useState('Todos');
+  const [origenGeneral, setOrigenGeneral] = useState('Todos');
+  const [destinoGeneral, setDestinoGeneral] = useState('Todos');
+  const [fechaSalidaGeneral, setFechaSalidaGeneral] = useState('');
+  const [fechaLlegadaGeneral, setFechaLlegadaGeneral] = useState('');
+
   useEffect(() => {
     if (userBalance !== undefined) {
       setPresupuesto(userBalance);
@@ -146,157 +154,294 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
 
     const tiempoDisponible = (parseInt(diasDisponibles) || 0) * 24;
 
-    // ALGORITMO: Filtrar por Gusto, Presupuesto, Día de Salida, No Visitados y calcular Tiempo Neto de Estancia
-    const resultado = mapped.filter(vuelo => {
-      const cumpleGusto = gusto === 'Todos' || vuelo.categoria_gustos === gusto;
-      const cumplePresupuesto = vuelo.precio_monedas_oceanicas <= presupuesto;
-      
-      // El tiempo de vuelo es ida y vuelta (multiplicado por 2)
-      const tiempoVueloTotal = vuelo.tiempo_vuelo_horas * 2;
-      const cumpleTiempo = tiempoDisponible > tiempoVueloTotal;
+    let resultado = [];
 
-      // Filtrar por el día seleccionado en el calendario (YYYY-MM-DD)
-      const diaVuelo = vuelo.fecha_salida ? vuelo.fecha_salida.split('T')[0] : '';
-      const cumpleFecha = diaVuelo === diaSalida;
-      
-      // Filtrar por no visitados (según países gestionados en la ventana emergente)
-      const esNoVisitado = !soloNoVisitados || !paisesVisitados.includes(vuelo.pais_destino);
+    if (searchTab === 'inteligente') {
+      resultado = mapped.filter(vuelo => {
+        // Filtrar por lugar de salida (Buscador Inteligente)
+        const cumpleOrigen = origenInteligente === 'Todos' || (vuelo.origen && vuelo.origen.includes(origenInteligente));
+        
+        const cumpleGusto = gusto === 'Todos' || vuelo.categoria_gustos === gusto;
+        const cumplePresupuesto = vuelo.precio_monedas_oceanicas <= presupuesto;
+        
+        // El tiempo de vuelo es ida y vuelta (multiplicado por 2)
+        const tiempoVueloTotal = vuelo.tiempo_vuelo_horas * 2;
+        const cumpleTiempo = tiempoDisponible > tiempoVueloTotal;
 
-      return cumpleGusto && cumplePresupuesto && cumpleTiempo && cumpleFecha && esNoVisitado;
-    }).map(vuelo => {
-      const tiempoVueloTotal = vuelo.tiempo_vuelo_horas * 2;
-      const tiempoNetoVisita = tiempoDisponible - tiempoVueloTotal;
+        // Filtrar por el día seleccionado en el calendario (YYYY-MM-DD)
+        const diaVuelo = vuelo.fecha_salida ? vuelo.fecha_salida.split('T')[0] : '';
+        const cumpleFecha = diaVuelo === diaSalida;
+        
+        // Filtrar por no visitados (según países gestionados en la ventana emergente)
+        const esNoVisitado = !soloNoVisitados || !paisesVisitados.includes(vuelo.pais_destino);
 
-      return {
-        ...vuelo,
-        tiempoNetoVisita,
-        riesgoRetrasoHoras: (tiempoVueloTotal * 0.15).toFixed(1)
-      };
-    });
+        return cumpleOrigen && cumpleGusto && cumplePresupuesto && cumpleTiempo && cumpleFecha && esNoVisitado;
+      }).map(vuelo => {
+        const tiempoVueloTotal = vuelo.tiempo_vuelo_horas * 2;
+        const tiempoNetoVisita = tiempoDisponible - tiempoVueloTotal;
+
+        return {
+          ...vuelo,
+          tiempoNetoVisita,
+          riesgoRetrasoHoras: (tiempoVueloTotal * 0.15).toFixed(1)
+        };
+      });
+    } else {
+      // Buscador General
+      resultado = mapped.filter(vuelo => {
+        const cumpleOrigen = origenGeneral === 'Todos' || (vuelo.origen && vuelo.origen.includes(origenGeneral));
+        const cumpleDestino = destinoGeneral === 'Todos' || (vuelo.destino_ciudad && vuelo.destino_ciudad.includes(destinoGeneral)) || (vuelo.destino_pais && vuelo.destino_pais.includes(destinoGeneral));
+        
+        const diaSalidaVuelo = vuelo.fecha_salida ? vuelo.fecha_salida.split('T')[0] : '';
+        const cumpleSalida = !fechaSalidaGeneral || diaSalidaVuelo === fechaSalidaGeneral;
+        
+        const diaLlegadaVuelo = vuelo.fecha_llegada ? vuelo.fecha_llegada.split('T')[0] : '';
+        const cumpleLlegada = !fechaLlegadaGeneral || diaLlegadaVuelo === fechaLlegadaGeneral;
+
+        return cumpleOrigen && cumpleDestino && cumpleSalida && cumpleLlegada;
+      }).map(vuelo => {
+        const tiempoVueloTotal = vuelo.tiempo_vuelo_horas * 2;
+        // Asignar estancia neta si hay datos válidos (sino 0)
+        let tiempoNetoVisita = 0;
+        if (vuelo.fecha_salida && vuelo.fecha_llegada) {
+          const salidaMs = new Date(vuelo.fecha_salida).getTime();
+          const llegadaMs = new Date(vuelo.fecha_llegada).getTime();
+          tiempoNetoVisita = Math.max(0, (llegadaMs - salidaMs) / (1000 * 60 * 60) - tiempoVueloTotal);
+        }
+
+        return {
+          ...vuelo,
+          tiempoNetoVisita,
+          riesgoRetrasoHoras: (tiempoVueloTotal * 0.15).toFixed(1)
+        };
+      });
+    }
 
     setVuelosFiltrados(resultado);
   };
 
   useEffect(() => {
     ejecutarBuscadorInteligente();
-  }, [presupuesto, gusto, diasDisponibles, diaSalida, soloNoVisitados, paisesVisitados, vuelos, user]);
+  }, [presupuesto, gusto, diasDisponibles, diaSalida, soloNoVisitados, paisesVisitados, searchTab, origenInteligente, origenGeneral, destinoGeneral, fechaSalidaGeneral, fechaLlegadaGeneral, vuelos, user]);
+
+  // Obtener lugares de origen únicos de los vuelos
+  const origenesDisponibles = Array.from(new Set(vuelos.map(v => v.origen).filter(Boolean)));
+  // Obtener destinos únicos de los vuelos
+  const destinosDisponibles = Array.from(new Set([
+    ...vuelos.map(v => v.destino_ciudad).filter(Boolean),
+    ...vuelos.map(v => v.destino_pais).filter(Boolean)
+  ]));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans">
       {/* Contenedor Principal */}
       <div className="bg-white rounded-3xl shadow-lg border border-slate-200 overflow-hidden grid grid-cols-1 lg:grid-cols-3">
         
-        {/* PANEL IZQUIERDO: FILTROS INTELIGENTES */}
+        {/* PANEL IZQUIERDO: BUSCADORES DE VUELOS */}
         <div className="p-6 bg-[#162b4e] text-white flex flex-col justify-between">
           <div>
-            <h2 className="text-2xl font-bold tracking-wide mb-2 flex items-center space-x-2">
-              <i data-lucide="sliders-horizontal" className="w-5 h-5 text-blue-300"></i>
-              <span>Buscador Inteligente</span>
-            </h2>
-            <p className="text-xs text-blue-200 mb-6">Aerolíneas Oceánicas — Encuentra tu destino ideal</p>
-            
-            <div className="space-y-5">
-              {/* Filtro Gustos */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-300 mb-2">¿Qué te gustaría experimentar?</label>
-                <select 
-                  value={gusto} 
-                  onChange={(e) => setGusto(e.target.value)}
-                  className="w-full bg-blue-950 border border-blue-800 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 text-white"
-                >
-                  <option value="Todos">Cualquier experiencia</option>
-                  <option value="Playa">Playa</option>
-                  <option value="Montaña">Montaña</option>
-                  <option value="Desierto">Desierto</option>
-                  <option value="Historia">Historia</option>
-                  <option value="Selva">Selva</option>
-                </select>
-              </div>
-
-              {/* Filtro Presupuesto */}
-              <div>
-                <div className="flex justify-between text-xs font-semibold uppercase text-gray-300 mb-2">
-                  <span>Presupuesto Máximo</span>
-                  <span className="text-green-400 font-bold">{presupuesto} MO</span>
-                </div>
-                <input 
-                  type="range" min="0" max={userBalance || 5000} step="50"
-                  value={presupuesto}
-                  onChange={(e) => setPresupuesto(parseInt(e.target.value))}
-                  className="w-full accent-green-400 bg-blue-950 h-2 rounded-lg cursor-pointer"
-                />
-              </div>
-
-              {/* Filtro Tiempo Disponible */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-300 mb-2">Días disponibles para viajar</label>
-                <input 
-                  type="number" min="1" max="30"
-                  value={diasDisponibles}
-                  onChange={(e) => setDiasDisponibles(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-full bg-blue-950 border border-blue-800 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 text-white"
-                />
-              </div>
-
-              {/* Filtro Calendario de Salida */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-300 mb-2">Día planificado de salida</label>
-                <div className="grid grid-cols-5 gap-1 bg-blue-950 p-1.5 rounded-xl border border-blue-900">
-                  {[
-                    { label: 'Mié 8', value: '2026-07-08' },
-                    { label: 'Jue 9', value: '2026-07-09' },
-                    { label: 'Vie 10', value: '2026-07-10' },
-                    { label: 'Sáb 11', value: '2026-07-11' },
-                    { label: 'Dom 12', value: '2026-07-12' }
-                  ].map(day => (
-                    <button
-                      key={day.value}
-                      type="button"
-                      onClick={() => setDiaSalida(day.value)}
-                      className={`py-2 text-[11px] font-bold rounded-lg transition-all ${
-                        diaSalida === day.value 
-                          ? 'bg-emerald-500 text-slate-950 shadow' 
-                          : 'text-gray-400 hover:text-white hover:bg-blue-900/50'
-                      }`}
-                    >
-                      {day.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Filtro Sólo No Visitados */}
-              <div className="flex items-center justify-between py-2 border-t border-blue-900/50 mt-4">
-                <div className="flex items-center space-x-3">
-                  <input 
-                    type="checkbox" 
-                    id="soloNoVisitadosMap" 
-                    checked={soloNoVisitados}
-                    onChange={e => {
-                      const checked = e.target.checked;
-                      setSoloNoVisitados(checked);
-                      if (checked) {
-                        setModalPaisesOpen(true);
-                      }
-                    }}
-                    className="w-4 h-4 rounded border-blue-800 text-blue-600 focus:ring-blue-500 bg-blue-950"
-                  />
-                  <label htmlFor="soloNoVisitadosMap" className="text-xs font-semibold text-gray-300 cursor-pointer select-none">
-                    Mostrar sólo destinos no visitados
-                  </label>
-                </div>
-                {soloNoVisitados && (
-                  <button 
-                    type="button"
-                    onClick={() => setModalPaisesOpen(true)}
-                    className="text-[10px] bg-blue-900/60 hover:bg-blue-850 text-blue-300 px-2 py-1 rounded font-bold border border-blue-800/80 transition"
-                  >
-                    Editar
-                  </button>
-                )}
-              </div>
+            {/* Cabecera del Panel */}
+            <div className="mb-6">
+              <h2 className="text-xl font-black tracking-wide mb-1 flex items-center space-x-2">
+                <i data-lucide="plane-takeoff" className="w-5 h-5 text-blue-300"></i>
+                <span>Buscador de Vuelos</span>
+              </h2>
+              <p className="text-[11px] text-blue-200">Aerolíneas Oceánicas — Explora a tu propio ritmo</p>
             </div>
+
+            {/* Selectores de Pestañas */}
+            <div className="flex border-b border-blue-900/60 mb-5 text-xs font-bold uppercase tracking-wider">
+              <button 
+                type="button" 
+                onClick={() => setSearchTab('inteligente')}
+                className={`flex-1 pb-3 text-center transition-all ${searchTab === 'inteligente' ? 'text-emerald-400 border-b-2 border-emerald-400 font-extrabold' : 'text-blue-300 hover:text-white'}`}
+              >
+                Inteligente
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setSearchTab('general')}
+                className={`flex-1 pb-3 text-center transition-all ${searchTab === 'general' ? 'text-emerald-400 border-b-2 border-emerald-400 font-extrabold' : 'text-blue-300 hover:text-white'}`}
+              >
+                General
+              </button>
+            </div>
+
+            {/* RENDERIZADO CONDICIONAL DE ENTRADAS SEGÚN LA PESTAÑA */}
+            {searchTab === 'inteligente' ? (
+              <div className="space-y-4">
+                {/* País / Lugar de Salida */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-1.5">Origen / Lugar de salida</label>
+                  <select 
+                    value={origenInteligente} 
+                    onChange={(e) => setOrigenInteligente(e.target.value)}
+                    className="w-full bg-blue-950 border border-blue-800 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 text-white"
+                  >
+                    <option value="Todos">Cualquier origen</option>
+                    {origenesDisponibles.map(ori => (
+                      <option key={ori} value={ori}>{ori}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Filtro Gustos */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-1.5">¿Qué te gustaría experimentar?</label>
+                  <select 
+                    value={gusto} 
+                    onChange={(e) => setGusto(e.target.value)}
+                    className="w-full bg-blue-950 border border-blue-800 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 text-white"
+                  >
+                    <option value="Todos">Cualquier experiencia</option>
+                    <option value="Playa">Playa</option>
+                    <option value="Montaña">Montaña</option>
+                    <option value="Desierto">Desierto</option>
+                    <option value="Historia">Historia</option>
+                    <option value="Selva">Selva</option>
+                  </select>
+                </div>
+
+                {/* Filtro Presupuesto */}
+                <div>
+                  <div className="flex justify-between text-[10px] font-bold uppercase text-gray-300 mb-1.5">
+                    <span>Presupuesto Máximo</span>
+                    <span className="text-green-400 font-bold">{presupuesto} MO</span>
+                  </div>
+                  <input 
+                    type="range" min="0" max={userBalance || 5000} step="50"
+                    value={presupuesto}
+                    onChange={(e) => setPresupuesto(parseInt(e.target.value))}
+                    className="w-full accent-green-400 bg-blue-950 h-1.5 rounded-lg cursor-pointer"
+                  />
+                </div>
+
+                {/* Filtro Tiempo Disponible */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-1.5">Días disponibles para viajar</label>
+                  <input 
+                    type="number" min="1" max="30"
+                    value={diasDisponibles}
+                    onChange={(e) => setDiasDisponibles(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-full bg-blue-950 border border-blue-800 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 text-white"
+                  />
+                </div>
+
+                {/* Filtro Calendario de Salida */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-1.5">Día planificado de salida</label>
+                  <div className="grid grid-cols-5 gap-1 bg-blue-950 p-1 rounded-xl border border-blue-900">
+                    {[
+                      { label: 'Mié 8', value: '2026-07-08' },
+                      { label: 'Jue 9', value: '2026-07-09' },
+                      { label: 'Vie 10', value: '2026-07-10' },
+                      { label: 'Sáb 11', value: '2026-07-11' },
+                      { label: 'Dom 12', value: '2026-07-12' }
+                    ].map(day => (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() => setDiaSalida(day.value)}
+                        className={`py-1.5 text-[9px] font-black rounded-lg transition-all ${
+                          diaSalida === day.value 
+                            ? 'bg-emerald-500 text-slate-950 shadow' 
+                            : 'text-gray-400 hover:text-white hover:bg-blue-900/50'
+                        }`}
+                      >
+                        {day.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Filtro Sólo No Visitados */}
+                <div className="flex items-center justify-between py-2 border-t border-blue-900/50 mt-2">
+                  <div className="flex items-center space-x-2.5">
+                    <input 
+                      type="checkbox" 
+                      id="soloNoVisitadosMap" 
+                      checked={soloNoVisitados}
+                      onChange={e => {
+                        const checked = e.target.checked;
+                        setSoloNoVisitados(checked);
+                        if (checked) {
+                          setModalPaisesOpen(true);
+                        }
+                      }}
+                      className="w-3.5 h-3.5 rounded border-blue-800 text-blue-600 focus:ring-blue-500 bg-blue-950"
+                    />
+                    <label htmlFor="soloNoVisitadosMap" className="text-[10px] font-bold text-gray-300 cursor-pointer select-none">
+                      Destinos no visitados
+                    </label>
+                  </div>
+                  {soloNoVisitados && (
+                    <button 
+                      type="button"
+                      onClick={() => setModalPaisesOpen(true)}
+                      className="text-[9px] bg-blue-900/60 hover:bg-blue-850 text-blue-300 px-2 py-0.5 rounded font-bold border border-blue-800/80 transition"
+                    >
+                      Editar
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Lugar de Salida (Buscador General) */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-1.5">Origen / Lugar de salida</label>
+                  <select 
+                    value={origenGeneral} 
+                    onChange={(e) => setOrigenGeneral(e.target.value)}
+                    className="w-full bg-blue-950 border border-blue-800 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 text-white"
+                  >
+                    <option value="Todos">Cualquier origen</option>
+                    {origenesDisponibles.map(ori => (
+                      <option key={ori} value={ori}>{ori}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Lugar de Llegada (Buscador General) */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-1.5">Destino / Lugar de llegada</label>
+                  <select 
+                    value={destinoGeneral} 
+                    onChange={(e) => setDestinoGeneral(e.target.value)}
+                    className="w-full bg-blue-950 border border-blue-800 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 text-white"
+                  >
+                    <option value="Todos">Cualquier destino</option>
+                    {destinosDisponibles.map(dest => (
+                      <option key={dest} value={dest}>{dest}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Fecha de Salida (Buscador General) */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-1.5">Fecha de salida</label>
+                  <input 
+                    type="date"
+                    value={fechaSalidaGeneral}
+                    onChange={(e) => setFechaSalidaGeneral(e.target.value)}
+                    className="w-full bg-blue-950 border border-blue-800 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 text-white scheme-dark"
+                  />
+                </div>
+
+                {/* Fecha de Llegada (Buscador General) */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-1.5">Fecha de llegada</label>
+                  <input 
+                    type="date"
+                    value={fechaLlegadaGeneral}
+                    onChange={(e) => setFechaLlegadaGeneral(e.target.value)}
+                    className="w-full bg-blue-950 border border-blue-800 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 text-white scheme-dark"
+                  />
+                </div>
+              </div>
+            )}
           </div>
+        </div>
 
           {/* Saldo de Bienvenida en Pantalla */}
           <div className="mt-8 bg-blue-950/60 p-4 rounded-xl border border-blue-900 flex justify-between items-center">
