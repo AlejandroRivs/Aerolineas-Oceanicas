@@ -90,73 +90,71 @@ router.get('/api/gatekeeper/status', async (ctx) => {
 router.post('/api/auth/login', async (ctx) => {
   const { email, password } = ctx.request.body;
 
-  const validCredentials = {
-    'cliente@oceanica.com': { password: 'cliente123', googleId: 'mock_google_id_1' },
-    'servicio@oceanica.com': { password: 'servicio123', googleId: 'mock_google_id_2' },
-    'gerente@oceanica.com': { password: 'gerente123', googleId: 'mock_google_id_3' },
-    'admin@oceanica.com': { password: 'admin123', googleId: 'mock_google_id_4' }
-  };
+  try {
+    const cred = await db.getCredencial(email, password);
 
-  const cred = validCredentials[email];
-  if (cred && cred.password === password) {
-    let user = await db.getUsuarioByGoogleId(cred.googleId);
+    if (cred) {
+      let user = await db.getUsuarioByGoogleId(cred.google_id);
 
-    // Si estamos en base de datos real (Supabase) y el usuario no existe aún, lo creamos y configuramos con su rol/saldo específico
-    if (!user && !db.useMock) {
-      const names = {
-        'mock_google_id_1': 'Juan Pérez',
-        'mock_google_id_2': 'Carlos Agente',
-        'mock_google_id_3': 'Marta Gerente',
-        'mock_google_id_4': 'Alex Admin'
-      };
-      const roles = {
-        'mock_google_id_1': 'Cliente',
-        'mock_google_id_2': 'Servicio al Cliente',
-        'mock_google_id_3': 'Gerente',
-        'mock_google_id_4': 'Administrador'
-      };
-      const saldos = {
-        'mock_google_id_1': 5000.00,
-        'mock_google_id_2': 5000.00,
-        'mock_google_id_3': 5000.00,
-        'mock_google_id_4': 100000.00
-      };
+      // Si estamos en base de datos real (Supabase) y el usuario no existe aún, lo creamos y configuramos con su rol/saldo específico
+      if (!user && !db.useMock) {
+        const names = {
+          'mock_google_id_1': 'Juan Pérez',
+          'mock_google_id_2': 'Carlos Agente',
+          'mock_google_id_3': 'Marta Gerente',
+          'mock_google_id_4': 'Alex Admin'
+        };
+        const roles = {
+          'mock_google_id_1': 'Cliente',
+          'mock_google_id_2': 'Servicio al Cliente',
+          'mock_google_id_3': 'Gerente',
+          'mock_google_id_4': 'Administrador'
+        };
+        const saldos = {
+          'mock_google_id_1': 5000.00,
+          'mock_google_id_2': 5000.00,
+          'mock_google_id_3': 5000.00,
+          'mock_google_id_4': 100000.00
+        };
 
-      try {
-        user = await db.crearUsuario(cred.googleId, email, names[cred.googleId], null);
-        if (user) {
-          const { data: updatedUser, error: updateErr } = await db.supabase
-            .from('usuarios')
-            .update({
-              rol: roles[cred.googleId],
-              saldo_monedas: saldos[cred.googleId]
-            })
-            .eq('id', user.id)
-            .select()
-            .single();
+        try {
+          user = await db.crearUsuario(cred.google_id, email, names[cred.google_id] || 'Usuario Oceanica', null);
+          if (user) {
+            const { data: updatedUser, error: updateErr } = await db.supabase
+              .from('usuarios')
+              .update({
+                rol: roles[cred.google_id] || 'Cliente',
+                saldo_monedas: saldos[cred.google_id] || 5000.00
+              })
+              .eq('id', user.id)
+              .select()
+              .single();
 
-          if (!updateErr && updatedUser) {
-            user = updatedUser;
+            if (!updateErr && updatedUser) {
+              user = updatedUser;
+            }
           }
+        } catch (err) {
+          console.error('Error al auto-aprovisionar usuario de rol en Supabase:', err.message);
         }
-      } catch (err) {
-        console.error('Error al auto-aprovisionar usuario de rol en Supabase:', err.message);
+      }
+
+      if (user) {
+        ctx.session.user = {
+          id: user.id,
+          email: user.email,
+          nombre: user.nombre,
+          rol: user.rol,
+          saldo: user.saldo_monedas,
+          ciudadesVisitadas: user.ciudadesVisitadas || []
+        };
+        ctx.status = 200;
+        ctx.body = { success: true, user: ctx.session.user };
+        return;
       }
     }
-
-    if (user) {
-      ctx.session.user = {
-        id: user.id,
-        email: user.email,
-        nombre: user.nombre,
-        rol: user.rol,
-        saldo: user.saldo_monedas,
-        ciudadesVisitadas: user.ciudadesVisitadas || []
-      };
-      ctx.status = 200;
-      ctx.body = { success: true, user: ctx.session.user };
-      return;
-    }
+  } catch (err) {
+    console.error('Error durante el proceso de login:', err.message);
   }
 
   ctx.status = 401;

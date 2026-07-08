@@ -9,6 +9,12 @@ const mockDb = {
     { id: 3, google_id: 'mock_google_id_3', email: 'gerente@oceanica.com', nombre: 'Marta Gerente (Mock)', avatar: null, saldo_monedas: 5000.00, rol: 'Gerente', ciudadesVisitadas: [] },
     { id: 4, google_id: 'mock_google_id_4', email: 'admin@oceanica.com', nombre: 'Alex Admin (Mock)', avatar: null, saldo_monedas: 100000.00, rol: 'Administrador', ciudadesVisitadas: [] }
   ],
+  credenciales: [
+    { id: 1, email: 'cliente@oceanica.com', password: 'cliente123', google_id: 'mock_google_id_1' },
+    { id: 2, email: 'servicio@oceanica.com', password: 'servicio123', google_id: 'mock_google_id_2' },
+    { id: 3, email: 'gerente@oceanica.com', password: 'gerente123', google_id: 'mock_google_id_3' },
+    { id: 4, email: 'admin@oceanica.com', password: 'admin123', google_id: 'mock_google_id_4' }
+  ],
   vuelos: [
   {
     "id": 1001,
@@ -1199,6 +1205,21 @@ if (process.env.MONGODB_URI) {
 const db = {
   useMock: true, // Se sobreescribirá dinámicamente abajo o se leerá directamente
   supabase: supabase,
+  // --- CREDENCIALES ---
+  async getCredencial(email, password) {
+    if (useMock) {
+      return mockDb.credenciales.find(c => c.email === email && c.password === password) || null;
+    }
+    const { data, error } = await supabase
+      .from('credenciales')
+      .select('*')
+      .eq('email', email)
+      .eq('password', password)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+
   // --- USUARIOS ---
   async getUsuarioByGoogleId(googleId) {
     if (useMock) {
