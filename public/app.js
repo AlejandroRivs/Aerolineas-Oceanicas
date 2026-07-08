@@ -5,6 +5,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("mapa");
+  const [showWelcomePopup, setShowWelcomePopup] = useState(false);
 
   // Estados de Vuelos y Mapa
   const [vuelos, setVuelos] = useState([]);
@@ -166,7 +167,7 @@ function App() {
               if (res.ok) {
                 setUser(data.user);
                 if (data.isNewUser) {
-                  alert(`¡Bienvenido! Se ha inyectado tu Bono de Bienvenida de 5,000 Monedas Oceánicas.`);
+                  setShowWelcomePopup(true);
                 }
                 fetchParking();
                 fetchIncidencias();
@@ -197,7 +198,7 @@ function App() {
         const data = await res.json();
         if (res.ok) {
           setUser(data.user);
-          alert(`¡Bono de Bienvenida Inyectado! Has recibido 5,000 Monedas Oceánicas.`);
+          setShowWelcomePopup(true);
           fetchParking();
           fetchIncidencias();
         }
@@ -953,6 +954,29 @@ function App() {
           <span className="hover:text-slate-600 cursor-pointer font-medium">Privacidad</span>
         </div>
       </footer>
+
+      {/* POPUP DE BIENVENIDA */}
+      {showWelcomePopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-8 shadow-2xl border border-blue-100 flex flex-col items-center text-center">
+            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 border border-blue-100">
+              <i data-lucide="gift" className="w-8 h-8 text-[#162b4e]"></i>
+            </div>
+            <h3 className="text-2xl font-black text-[#162b4e] mb-2">¡Bienvenido a Bordo!</h3>
+            <p className="text-sm text-slate-500 mb-6">Hemos depositado en tu Billetera Oceánica un bono inicial para que comiences tu aventura.</p>
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 w-full mb-6">
+              <span className="block text-xs font-bold text-emerald-600 uppercase tracking-widest mb-1">Bono Recibido</span>
+              <span className="block text-3xl font-black text-[#162b4e]">+5,000 MO</span>
+            </div>
+            <button 
+              onClick={() => setShowWelcomePopup(false)}
+              className="w-full py-3 bg-[#162b4e] hover:bg-blue-900 text-white font-bold rounded-xl transition duration-200 shadow-md"
+            >
+              ¡Empezar a Explorar!
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

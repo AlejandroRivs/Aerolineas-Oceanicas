@@ -17,7 +17,7 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
 
   // Estados de Pestañas y Búsqueda General
   const [searchTab, setSearchTab] = useState('inteligente'); // 'inteligente' o 'general'
-  const [origenInteligente, setOrigenInteligente] = useState('Todos');
+  const [origenInteligente, setOrigenInteligente] = useState('Guatemala');
   const [origenGeneral, setOrigenGeneral] = useState('Todos');
   const [destinoGeneral, setDestinoGeneral] = useState('Todos');
   const [fechaSalidaGeneral, setFechaSalidaGeneral] = useState('');
@@ -233,6 +233,63 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
     ...vuelos.map(v => v.destino_pais).filter(Boolean)
   ]));
 
+  const renderVuelosCards = (vuelosList, isFloating = false) => (
+    <div className={`grid grid-cols-1 ${isFloating ? '' : 'md:grid-cols-2 lg:grid-cols-3'} gap-6 overflow-y-auto pr-2 w-full h-full p-4`}>
+      {vuelosList.map((vuelo, index) => (
+        <div key={index} className="bg-white border border-slate-200 rounded-3xl p-5 flex flex-col justify-between shadow-lg hover:shadow-xl transition duration-200 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#162b4e] to-blue-500"></div>
+          <div className="space-y-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <span className="text-[10px] font-black text-blue-600 tracking-widest uppercase bg-blue-50 px-2 py-0.5 rounded-full mb-2 inline-block">OC-{100 + index}</span>
+                <div className="flex items-center space-x-2 text-[#162b4e]">
+                  <span className="text-sm font-bold">{vuelo.origen || 'Origen'}</span>
+                  <span className="text-xs text-slate-400">→</span>
+                  <span className="text-sm font-bold">{vuelo.ciudad_destino}</span>
+                </div>
+                <p className="text-xs text-slate-500 font-medium mt-1">{vuelo.pais_destino} • <span className="italic">{vuelo.categoria_gustos}</span></p>
+              </div>
+              <div className="text-right">
+                <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Precio</span>
+                <span className="font-black text-emerald-600 text-lg">{vuelo.precio_monedas_oceanicas} MO</span>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3 space-y-2 text-xs text-slate-600">
+              <div className="flex justify-between">
+                <span className="font-medium text-slate-500">Duración Vuelo (I/V):</span>
+                <span className="font-bold text-slate-700">{(vuelo.tiempo_vuelo_horas * 2).toFixed(1)}h</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-slate-500">Estancia Neta:</span>
+                <span className="font-black text-emerald-600">{vuelo.tiempoNetoVisita.toFixed(1)} hrs</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-slate-500">Colchón Retrasos:</span>
+                <span className="font-bold text-amber-600">+{vuelo.riesgoRetrasoHoras}h rec.</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end">
+            <button 
+              onClick={() => handleBookFlight(vuelo.id)}
+              className="w-full py-2.5 bg-[#162b4e] hover:bg-blue-800 text-white font-bold rounded-xl text-xs transition duration-200 shadow-md"
+            >
+              Reservar Vuelo
+            </button>
+          </div>
+        </div>
+      ))}
+
+      {vuelosList.length === 0 && (
+        <div className="col-span-full py-12 text-center text-slate-400 text-sm font-medium">
+          No se encontraron vuelos disponibles con los filtros actuales.
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-6 font-sans">
       {/* Contenedor Principal */}
@@ -279,10 +336,9 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
                     onChange={(e) => setOrigenInteligente(e.target.value)}
                     className="w-full bg-blue-950 border border-blue-800 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 text-white"
                   >
-                    <option value="Todos">Cualquier origen</option>
-                    {origenesDisponibles.map(ori => (
-                      <option key={ori} value={ori}>{ori}</option>
-                    ))}
+                    <option value="Guatemala">Guatemala</option>
+                    <option value="México">México</option>
+                    <option value="Costa Rica">Costa Rica</option>
                   </select>
                 </div>
 
@@ -450,201 +506,165 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
           </div>
         </div>
 
-        {/* PANEL CENTRAL: MAPA INTERACTIVO SVG (WHITENED / LIGHT MODE) */}
-        <div className="p-6 lg:col-span-2 flex flex-col justify-between bg-white relative border-l border-slate-100 min-h-[450px]">
-          <div className="w-full flex justify-between items-center mb-6 pt-2 pb-4 border-b border-slate-100">
-            <div className="flex items-center space-x-2">
-              <span className="text-xs font-bold bg-[#162b4e] text-white px-3 py-1.5 rounded-full uppercase tracking-widest shadow-sm">
-                Mapa de América Latina
-              </span>
-              {paisSeleccionado && (
-                <button 
-                  onClick={() => setPaisSeleccionado(null)}
-                  className="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-full shadow-sm transition"
-                >
-                  Limpiar selección
-                </button>
-              )}
-            </div>
-            <div className="flex items-center space-x-3 text-right col-span-2">
-              <span className="text-[11px] font-mono text-slate-500 uppercase tracking-wider font-semibold">
-                Destino: {paisHover || (paisSeleccionado ? paisSeleccionado.toUpperCase() : "Pasa el cursor para explorar")}
-              </span>
-              <span className="text-[11px] text-blue-600 font-extrabold tracking-wide">
-                Escala: {(zoom * 100).toFixed(0)}%
-              </span>
-              {paisSeleccionado && (
-                <span className="text-[11px] bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-full font-bold animate-pulse">
-                  Vuelos a {paisSeleccionado} enfocados
+        {/* PANEL CENTRAL: MAPA INTERACTIVO SVG O RESULTADOS GENERALES */}
+        {searchTab === 'inteligente' ? (
+          <div className="p-6 lg:col-span-2 flex flex-col justify-between bg-[#162b4e]/5 relative border-l border-slate-100 min-h-[450px]">
+            <div className="w-full flex justify-between items-center mb-6 pt-2 pb-4 border-b border-slate-200">
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-bold bg-[#162b4e] text-white px-3 py-1.5 rounded-full uppercase tracking-widest shadow-sm">
+                  Mapa de América Latina
                 </span>
+                {paisSeleccionado && (
+                  <button 
+                    onClick={() => setPaisSeleccionado(null)}
+                    className="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-full shadow-sm transition"
+                  >
+                    Limpiar selección
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center space-x-3 text-right col-span-2">
+                <span className="text-[11px] font-mono text-slate-500 uppercase tracking-wider font-semibold">
+                  Destino: {paisHover || (paisSeleccionado ? paisSeleccionado.toUpperCase() : "Pasa el cursor para explorar")}
+                </span>
+                <span className="text-[11px] text-blue-600 font-extrabold tracking-wide">
+                  Escala: {(zoom * 100).toFixed(0)}%
+                </span>
+              </div>
+            </div>
+            
+            <div className="relative w-full h-96 flex items-center justify-center my-auto pt-6 overflow-hidden">
+              {/* BOTONES FLOTANTES DE ZOOM */}
+              <div className="absolute bottom-4 right-4 z-20 flex flex-col space-y-1.5 bg-white/90 backdrop-blur-sm p-1.5 rounded-xl border border-gray-200 shadow-md">
+                <button 
+                  onClick={handleZoomIn} 
+                  className="w-8 h-8 flex items-center justify-center bg-[#162b4e] hover:bg-blue-600 text-white font-bold rounded-lg transition-colors shadow-sm text-lg"
+                  title="Acercar mapa"
+                >
+                  +
+                </button>
+                <button 
+                  onClick={handleZoomOut} 
+                  className="w-8 h-8 flex items-center justify-center bg-[#162b4e] hover:bg-blue-600 text-white font-bold rounded-lg transition-colors shadow-sm text-lg"
+                  title="Alejar mapa"
+                >
+                  -
+                </button>
+                <button 
+                  onClick={handleReset} 
+                  className="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 text-xs rounded-lg transition-all border border-gray-200"
+                  title="Restaurar escala base"
+                >
+                  Reset
+                </button>
+              </div>
+
+              {/* Contenedor SVG con transform de escala y traslación para movimiento */}
+              <div 
+                ref={mapContainerRef}
+                className="w-full flex items-center justify-center overflow-hidden origin-center select-none" 
+                style={{ 
+                  transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`, 
+                  cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
+                  transition: isDragging ? 'none' : 'transform 0.2s ease-out'
+                }}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUpOrLeave}
+                onMouseLeave={handleMouseUpOrLeave}
+              >
+                <ComposableMap
+                  projectionConfig={{
+                    scale: 235,
+                    center: [-67, -13]
+                  }}
+                  className="w-full h-auto select-none max-h-[380px] drop-shadow-lg"
+                >
+                  <Geographies>
+                    {({ geographies }) =>
+                      geographies.map(geo => {
+                        const nombrePais = mapName(geo.properties.name || geo.properties.NAME);
+                        const esHovered = paisHover === nombrePais;
+                        const esSelected = paisSeleccionado === nombrePais;
+
+                        return (
+                          <Geography
+                            key={geo.id || geo.rsmKey}
+                            geography={geo}
+                            onMouseEnter={() => setPaisHover(nombrePais)}
+                            onMouseLeave={() => setPaisHover(null)}
+                            onClick={() => {
+                              setPaisSeleccionado(esSelected ? null : nombrePais);
+                            }}
+                            style={{
+                              default: {
+                                fill: esSelected ? "#10b981" : "#162b4e",
+                                stroke: "#1e293b",
+                                strokeWidth: 0.6,
+                                outline: "none",
+                                transition: "all 200ms ease"
+                              },
+                              hover: {
+                                fill: esSelected ? "#10b981" : "#3b82f6",
+                                stroke: "#ffffff",
+                                strokeWidth: 1.0,
+                                outline: "none",
+                                cursor: "pointer",
+                                transition: "all 100ms ease"
+                              },
+                              pressed: {
+                                fill: "#059669",
+                                stroke: "#ffffff",
+                                strokeWidth: 1.0,
+                                outline: "none"
+                              }
+                            }}
+                          />
+                        );
+                      })
+                    }
+                  </Geographies>
+                </ComposableMap>
+              </div>
+
+              {/* VENTANA FLOTANTE PARA PAÍS SELECCIONADO EN EL MAPA */}
+              {paisSeleccionado && (
+                <div className="absolute inset-0 z-30 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+                  <div className="bg-white w-full max-w-4xl h-[95%] rounded-2xl p-6 shadow-2xl relative overflow-hidden flex flex-col">
+                    <button 
+                      onClick={() => setPaisSeleccionado(null)}
+                      className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center transition-colors"
+                    >
+                      ✕
+                    </button>
+                    <div className="mb-4 border-b border-slate-100 pb-4">
+                      <span className="text-[10px] font-black text-blue-600 tracking-widest uppercase block mb-1">Destino Seleccionado</span>
+                      <h3 className="text-2xl font-black text-[#162b4e]">{paisSeleccionado.toUpperCase()}</h3>
+                      <p className="text-sm text-slate-500 mt-1">{vuelosFiltrados.filter(v => v.pais_destino === paisSeleccionado).length} vuelos disponibles con tus filtros.</p>
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      {renderVuelosCards(vuelosFiltrados.filter(v => v.pais_destino === paisSeleccionado), true)}
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
-          </div>
-
-          {/* Renderizado de la Región Geográfica con Zoom */}
-          <div className="relative w-full h-96 flex items-center justify-center my-auto pt-6 overflow-hidden">
             
-            {/* BOTONES FLOTANTES DE ZOOM */}
-            <div className="absolute bottom-4 right-4 z-20 flex flex-col space-y-1.5 bg-white/90 backdrop-blur-sm p-1.5 rounded-xl border border-gray-200 shadow-md">
-              <button 
-                onClick={handleZoomIn} 
-                className="w-8 h-8 flex items-center justify-center bg-[#162b4e] hover:bg-blue-600 text-white font-bold rounded-lg transition-colors shadow-sm text-lg"
-                title="Acercar mapa"
-              >
-                +
-              </button>
-              <button 
-                onClick={handleZoomOut} 
-                className="w-8 h-8 flex items-center justify-center bg-[#162b4e] hover:bg-blue-600 text-white font-bold rounded-lg transition-colors shadow-sm text-lg"
-                title="Alejar mapa"
-              >
-                -
-              </button>
-              <button 
-                onClick={handleReset} 
-                className="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 text-xs rounded-lg transition-all border border-gray-200"
-                title="Restaurar escala base"
-              >
-                Reset
-              </button>
-            </div>
-
-            {/* Contenedor SVG con transform de escala y traslación para movimiento */}
-            <div 
-              ref={mapContainerRef}
-              className="w-full flex items-center justify-center overflow-hidden origin-center select-none" 
-              style={{ 
-                transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`, 
-                cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
-                transition: isDragging ? 'none' : 'transform 0.2s ease-out'
-              }}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUpOrLeave}
-              onMouseLeave={handleMouseUpOrLeave}
-            >
-              <ComposableMap
-                projectionConfig={{
-                  scale: 235,
-                  center: [-67, -13]
-                }}
-                className="w-full h-auto select-none max-h-[380px] drop-shadow-lg"
-              >
-                <Geographies>
-                  {({ geographies }) =>
-                    geographies.map(geo => {
-                      const nombrePais = mapName(geo.properties.name || geo.properties.NAME);
-                      const esHovered = paisHover === nombrePais;
-                      const esSelected = paisSeleccionado === nombrePais;
-
-                      return (
-                        <Geography
-                          key={geo.id || geo.rsmKey}
-                          geography={geo}
-                          onMouseEnter={() => setPaisHover(nombrePais)}
-                          onMouseLeave={() => setPaisHover(null)}
-                          onClick={() => {
-                            setPaisSeleccionado(esSelected ? null : nombrePais);
-                          }}
-                          style={{
-                            default: {
-                              fill: esSelected ? "#10b981" : "#162b4e",
-                              stroke: "#1e293b",
-                              strokeWidth: 0.6,
-                              outline: "none",
-                              transition: "all 200ms ease"
-                            },
-                            hover: {
-                              fill: esSelected ? "#10b981" : "#3b82f6",
-                              stroke: "#ffffff",
-                              strokeWidth: 1.0,
-                              outline: "none",
-                              cursor: "pointer",
-                              transition: "all 100ms ease"
-                            },
-                            pressed: {
-                              fill: "#059669",
-                              stroke: "#ffffff",
-                              strokeWidth: 1.0,
-                              outline: "none"
-                            }
-                          }}
-                        />
-                      );
-                    })
-                  }
-                </Geographies>
-              </ComposableMap>
+            <div className="text-center text-xs text-slate-500 font-medium mt-4">
+              Selecciona un país en el mapa interactivo para enfocar los vuelos directos.
             </div>
           </div>
-          
-          <div className="text-center text-xs text-slate-400 font-medium">
-            Selecciona un país en el mapa interactivo para enfocar los vuelos directos.
-          </div>
-        </div>
-
-      </div>
-
-      {/* PANEL DE RECOMENDACIONES (ALGORITMO EN ACCIÓN - BRIGHT THEME) */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-md">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">
-            {paisSeleccionado ? `Vuelos sugeridos para: ${paisSeleccionado}` : 'Sugerencias personalizadas según tus filtros:'}
-          </h3>
-          <span className="text-xs bg-blue-50 text-[#162b4e] font-bold px-2.5 py-1 rounded-lg border border-blue-100">
-            {vuelosFiltrados.filter(v => !paisSeleccionado || v.pais_destino === paisSeleccionado).length} opciones encontradas
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[400px] overflow-y-auto pr-2">
-          {vuelosFiltrados
-            .filter(v => !paisSeleccionado || v.pais_destino === paisSeleccionado)
-            .map((vuelo, index) => (
-              <div key={index} className="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition duration-200">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="text-base font-bold text-slate-800">{vuelo.ciudad_destino}, {vuelo.pais_destino}</h4>
-                      <p className="text-xs text-blue-600 font-semibold">{vuelo.atractivo_turistico} • <span className="italic text-slate-500">{vuelo.categoria_gustos}</span></p>
-                    </div>
-                    <span className="font-extrabold text-[#162b4e] text-lg">{vuelo.precio_monedas_oceanicas} MO</span>
-                  </div>
-
-                  {/* Datos Calculados por el Algoritmo */}
-                  <div className="bg-white border border-slate-100 rounded-xl p-3 space-y-1.5 text-xs text-slate-600 shadow-inner">
-                    <div className="flex justify-between">
-                      <span>Vuelo (Ida/Vuelta):</span>
-                      <span className="font-semibold text-slate-700">{(vuelo.tiempo_vuelo_horas * 2).toFixed(1)}h</span>
-                    </div>
-                    <div className="flex justify-between border-t border-slate-100 pt-1">
-                      <span>Estancia Neta:</span>
-                      <span className="font-bold text-emerald-600">{vuelo.tiempoNetoVisita.toFixed(1)} horas libres</span>
-                    </div>
-                  </div>
-
-                  {/* Margen de advertencia por retrasos */}
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-[11px] text-amber-700 leading-normal flex items-start space-x-1.5">
-                    <span>Colchón para retrasos estimado: <strong>+{vuelo.riesgoRetrasoHoras}h</strong> recomendado.</span>
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-slate-200/60 flex justify-end">
-                  <button 
-                    onClick={() => handleBookFlight(vuelo.id)}
-                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition duration-150 shadow"
-                  >
-                    Reservar Vuelo
-                  </button>
-                </div>
-              </div>
-            ))}
-
-          {vuelosFiltrados.filter(v => !paisSeleccionado || v.pais_destino === paisSeleccionado).length === 0 && (
-            <div className="col-span-full py-8 text-center text-slate-400 text-sm font-medium">
-              No se encontraron combinaciones de vuelos que respeten tu presupuesto y el tiempo mínimo neto de estancia.
+        ) : (
+          <div className="p-6 lg:col-span-2 flex flex-col bg-white relative border-l border-slate-100 min-h-[450px] overflow-hidden">
+            <div className="mb-6 pb-4 border-b border-slate-100">
+              <h3 className="text-lg font-bold text-[#162b4e]">Resultados de Búsqueda General</h3>
+              <p className="text-xs text-slate-500">{vuelosFiltrados.length} opciones encontradas</p>
             </div>
-          )}
-        </div>
+            <div className="flex-1 overflow-hidden">
+              {renderVuelosCards(vuelosFiltrados, false)}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* VENTANA EMERGENTE (MODAL) PARA SELECCIONAR PAÍSES VISITADOS */}

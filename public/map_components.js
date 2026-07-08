@@ -30,8 +30,8 @@ window.Geographies = function Geographies({ children }) {
 
   React.useEffect(() => {
     const LATAM_ISO3 = [
-      "ARG", "BOL", "BRA", "CHL", "COL", "CRI", "CUB", "DOM", "ECU", "SLV",
-      "GTM", "HND", "MEX", "NIC", "PAN", "PRY", "PER", "URY", "VEN", "HTI", "JAM"
+      "ARG", "BOL", "BRA", "CHL", "COL", "CRI", "ECU", "SLV",
+      "GTM", "HND", "MEX", "NIC", "PAN", "PRY", "PER", "URY", "VEN"
     ];
 
     fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
