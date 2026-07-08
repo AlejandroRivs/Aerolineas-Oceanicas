@@ -7,6 +7,8 @@ const serve = require('koa-static');
 const path = require('path');
 const db = require('./database');
 const { processMidnightParkingCharges } = require('./parkingJob');
+const { OAuth2Client } = require('google-auth-library');
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const app = new Koa();
 const router = new Router();
@@ -187,18 +189,39 @@ router.post('/api/auth/mock-login', async (ctx) => {
   }
 });
 
-// Autenticación de Google (Mockeado o Real según configuración de API)
+// Endpoint para obtener configuraciones públicas (como Google Client ID)
+router.get('/api/config', async (ctx) => {
+  ctx.body = {
+    googleClientId: process.env.GOOGLE_CLIENT_ID || null
+  };
+});
+
+// Autenticación de Google (Real verificando el JWT o Simulación de respaldo)
 router.post('/api/auth/google', async (ctx) => {
-  const { token, email, name, picture } = ctx.request.body;
+  const { credential, token, email, name, picture } = ctx.request.body;
 
   try {
-    let googleId = 'google_simulated_' + token;
-    let userEmail = email || 'usuario@gmail.com';
-    let userName = name || 'Usuario Google';
-    let userAvatar = picture || null;
+    let googleId, userEmail, userName, userAvatar;
 
-    // Si hay una API Key real de Google, verificaríamos con google-auth-library.
-    // Para entornos estudiantiles/pruebas, creamos o recuperamos usando los datos enviados.
+    // Si viene la credencial JWT real de Google y está configurado el ID, la verificamos
+    if (credential && process.env.GOOGLE_CLIENT_ID) {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      googleId = payload['sub'];
+      userEmail = payload['email'];
+      userName = payload['name'];
+      userAvatar = payload['picture'];
+    } else {
+      // Fallback para simulación (si no hay Google Client ID o en desarrollo local)
+      googleId = 'google_simulated_' + (token || Math.random().toString(36).substring(2));
+      userEmail = email || 'usuario@gmail.com';
+      userName = name || 'Usuario Google';
+      userAvatar = picture || null;
+    }
+
     let user = await db.getUsuarioByGoogleId(googleId);
     let isNewUser = false;
 
@@ -223,8 +246,9 @@ router.post('/api/auth/google', async (ctx) => {
       isNewUser
     };
   } catch (error) {
+    console.error('Error en autenticación de Google:', error.message);
     ctx.status = 400;
-    ctx.body = { error: 'Error en la autenticación de Google.' };
+    ctx.body = { error: 'Error en la autenticación de Google: ' + error.message };
   }
 });
 

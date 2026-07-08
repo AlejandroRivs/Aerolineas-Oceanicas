@@ -27,6 +27,7 @@ function App() {
 
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [googleClientId, setGoogleClientId] = useState(null);
 
   // Cargar sesión al iniciar
   useEffect(() => {
@@ -34,7 +35,18 @@ function App() {
     fetchVuelos();
     fetchParking();
     fetchIncidencias();
+    fetchConfig();
   }, []);
+
+  const fetchConfig = async () => {
+    try {
+      const res = await fetch('/api/config');
+      const data = await res.json();
+      setGoogleClientId(data.googleClientId);
+    } catch (e) {
+      console.error('Error al obtener config pública:', e);
+    }
+  };
 
   const fetchSession = async () => {
     try {
@@ -136,26 +148,61 @@ function App() {
     }
   };
 
-  const handleGoogleLoginSimulated = async () => {
-    const tokenSimulado = Math.random().toString(36).substring(2);
-    const email = prompt("Ingrese su correo de Google simulado:", "viajero@gmail.com");
-    if (!email) return;
-    const name = email.split('@')[0];
-    try {
-      const res = await fetch('/api/auth/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: tokenSimulado, email, name, picture: `https://api.dicebear.com/7.x/bottts/svg?seed=${name}` })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setUser(data.user);
-        alert(`¡Bono de Bienvenida Inyectado! Has recibido 5,000 Monedas Oceánicas.`);
-        fetchParking();
-        fetchIncidencias();
+  const handleGoogleLogin = async () => {
+    // Si está configurada la llave de Google real, usamos el SDK oficial de Google
+    if (googleClientId && window.google) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: async (response) => {
+            try {
+              const res = await fetch('/api/auth/google', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ credential: response.credential })
+              });
+              const data = await res.json();
+              if (res.ok) {
+                setUser(data.user);
+                if (data.isNewUser) {
+                  alert(`¡Bienvenido! Se ha inyectado tu Bono de Bienvenida de 5,000 Monedas Oceánicas.`);
+                }
+                fetchParking();
+                fetchIncidencias();
+              } else {
+                alert(data.error);
+              }
+            } catch (err) {
+              console.error('Error al verificar token con el backend:', err);
+            }
+          }
+        });
+        window.google.accounts.id.prompt();
+      } catch (err) {
+        console.error('Error al inicializar Google Sign-In:', err);
       }
-    } catch (e) {
-      console.error(e);
+    } else {
+      // Fallback de simulación para desarrollo local
+      const tokenSimulado = Math.random().toString(36).substring(2);
+      const email = prompt("Ingrese su correo de Google simulado:", "viajero@gmail.com");
+      if (!email) return;
+      const name = email.split('@')[0];
+      try {
+        const res = await fetch('/api/auth/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: tokenSimulado, email, name, picture: `https://api.dicebear.com/7.x/bottts/svg?seed=${name}` })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setUser(data.user);
+          alert(`¡Bono de Bienvenida Inyectado! Has recibido 5,000 Monedas Oceánicas.`);
+          fetchParking();
+          fetchIncidencias();
+        }
+      } catch (e) {
+        console.error(e);
+      }
     }
   };
 
@@ -418,7 +465,7 @@ function App() {
           </div>
 
           <button 
-            onClick={handleGoogleLoginSimulated}
+            onClick={handleGoogleLogin}
             className="w-full py-3 bg-white hover:bg-slate-100 text-[#162b4e] font-bold rounded-xl transition duration-150 text-xs shadow-md flex items-center justify-center space-x-2 border border-slate-200"
           >
             <svg className="w-4 h-4 fill-current text-rose-500" viewBox="0 0 24 24">
