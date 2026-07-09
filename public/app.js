@@ -56,6 +56,13 @@ function App() {
     fetchConfig();
   }, []);
 
+  // Re-inicializar iconos de Lucide al renderizar las pestañas
+  useEffect(() => {
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+  }, [activeTab, user]);
+
   const fetchReservasUsuario = async () => {
     try {
       const res = await fetch('/api/reservas');

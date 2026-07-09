@@ -274,6 +274,12 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
     ejecutarBuscadorInteligente();
   }, [presupuesto, gusto, diasDisponibles, diaSalida, soloNoVisitados, paisesVisitados, searchTab, origenInteligente, origenGeneral, destinoGeneral, fechaSalidaGeneral, fechaLlegadaGeneral, vuelos, user]);
 
+  useEffect(() => {
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+  }, [vuelosFiltrados, searchTab, paisSeleccionado]);
+
   // Obtener lugares de origen únicos de los vuelos
   const origenesDisponibles = Array.from(new Set(vuelos.map(v => v.origen).filter(Boolean)));
   // Obtener destinos únicos de los vuelos
