@@ -30,7 +30,7 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
   }, [userBalance]);
 
   // Estados y funciones para el control y medidor de zoom solicitado
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(1.25);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
@@ -47,7 +47,7 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
     });
   };
   const handleReset = () => {
-    setZoom(1);
+    setZoom(1.25);
     setPosition({ x: 0, y: 0 });
   };
 
@@ -614,17 +614,17 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
                   </button>
                 )}
               </div>
-              <div className="flex items-center space-x-3 text-right col-span-2">
-                <span className="text-[11px] font-mono text-slate-500 uppercase tracking-wider font-semibold">
-                  Destino: {paisHover || (paisSeleccionado ? paisSeleccionado.toUpperCase() : "Pasa el cursor para explorar")}
+              <div className="flex items-center space-x-3 text-right col-span-2 text-right">
+                <span className="text-xs md:text-sm font-extrabold text-[#162b4e] uppercase tracking-wider">
+                  Destino: <span className="text-blue-600 text-sm md:text-base font-black transition-all">{paisHover || (paisSeleccionado ? paisSeleccionado.toUpperCase() : "Pasa el cursor")}</span>
                 </span>
-                <span className="text-[11px] text-blue-600 font-extrabold tracking-wide">
+                <span className="text-[11px] text-blue-600 font-extrabold tracking-wide bg-blue-50 px-2 py-0.5 rounded">
                   Escala: {(zoom * 100).toFixed(0)}%
                 </span>
               </div>
             </div>
             
-            <div className="relative w-full h-96 flex items-center justify-center my-auto pt-6 overflow-hidden">
+            <div className="relative w-full h-96 flex items-center justify-center my-auto pt-6 overflow-hidden bg-[#c5daeb] rounded-3xl border border-[#b0cde3] shadow-inner">
               {/* BOTONES FLOTANTES DE ZOOM */}
               <div className="absolute bottom-4 right-4 z-20 flex flex-col space-y-1.5 bg-white/90 backdrop-blur-sm p-1.5 rounded-xl border border-gray-200 shadow-md">
                 <button 
@@ -649,14 +649,14 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
                   Reset
                 </button>
               </div>
-
+ 
               {/* Contenedor SVG con transform de escala y traslación para movimiento */}
               <div 
                 ref={mapContainerRef}
                 className="w-full flex items-center justify-center overflow-hidden origin-center select-none" 
                 style={{ 
                   transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`, 
-                  cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
+                  cursor: zoom > 1.25 ? (isDragging ? 'grabbing' : 'grab') : 'default',
                   transition: isDragging ? 'none' : 'transform 0.2s ease-out'
                 }}
                 onMouseDown={handleMouseDown}
