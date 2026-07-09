@@ -140,7 +140,8 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
       let cat = "Historia";
       let atractivo = "Atracción Turística";
       
-      const paisInfo = window.PAISES_DATA[v.destino_pais];
+      const mappedPais = mapName(v.destino_pais);
+      const paisInfo = window.PAISES_DATA[mappedPais];
       if (paisInfo && paisInfo.destinos) {
         const matchedDest = paisInfo.destinos.find(d => 
           d.ciudad.toLowerCase() === v.destino_ciudad.toLowerCase() ||
@@ -170,7 +171,7 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
 
       return {
         ...v,
-        pais_destino: v.destino_pais,
+        pais_destino: mappedPais,
         ciudad_destino: v.destino_ciudad,
         atractivo_turistico: atractivo,
         categoria_gustos: cat,
