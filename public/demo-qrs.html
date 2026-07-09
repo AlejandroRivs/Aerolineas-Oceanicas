@@ -22,60 +22,52 @@
     header {
       background: #162b4e;
       border-bottom: 1px solid rgba(30,58,138,0.55);
-      padding: 10px 28px;
+      padding: 12px 32px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-shrink: 0;
     }
-    .header-logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+    .header-logo { display: flex; align-items: center; gap: 14px; }
     .logo-box {
-      width: 36px; height: 36px;
-      background: white;
-      border-radius: 10px;
+      width: 44px; height: 44px;
+      background: white; border-radius: 12px;
       display: flex; align-items: center; justify-content: center;
-      font-weight: 900; color: #0f172a; font-size: 11px;
+      font-weight: 900; color: #0f172a; font-size: 13px;
     }
-    .header-title { font-size: 14px; font-weight: 900; letter-spacing: 0.1em; color: white; }
-    .header-sub { font-size: 8.5px; color: #bfdbfe; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
-
+    .header-title { font-size: 18px; font-weight: 900; letter-spacing: 0.08em; color: white; }
+    .header-sub { font-size: 10px; color: #bfdbfe; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 2px; }
     .live-badge {
-      display: flex; align-items: center; gap: 8px;
+      display: flex; align-items: center; gap: 9px;
       background: rgba(15,23,70,0.6);
-      padding: 5px 14px;
-      border-radius: 10px;
+      padding: 7px 16px; border-radius: 10px;
       border: 1px solid rgba(30,58,138,0.5);
-      font-size: 11px; font-weight: 700; color: #bfdbfe;
+      font-size: 13px; font-weight: 700; color: #bfdbfe;
     }
     .dot-live {
-      width: 8px; height: 8px;
+      width: 10px; height: 10px;
       background: #22c55e; border-radius: 50%;
       animation: blink 1.4s ease-in-out infinite;
     }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
     .btn-reset {
       background: #D94E1F; color: white;
       font-family: 'Outfit', sans-serif;
-      font-weight: 900; font-size: 11px;
+      font-weight: 900; font-size: 13px;
       text-transform: uppercase; letter-spacing: 0.07em;
-      padding: 8px 18px; border: none; border-radius: 10px;
+      padding: 10px 22px; border: none; border-radius: 12px;
       cursor: pointer; transition: background 0.2s;
     }
     .btn-reset:hover { background: #b83f16; }
-    .header-right { display: flex; align-items: center; gap: 10px; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
 
-    /* ─── MAIN LAYOUT ─── */
+    /* ─── MAIN LAYOUT: 3 columnas ─── */
     main {
       flex: 1;
       display: grid;
-      grid-template-columns: 340px 1fr 240px;
-      gap: 12px;
-      padding: 12px;
+      grid-template-columns: 360px 1fr 280px;
+      gap: 14px;
+      padding: 14px;
       overflow: hidden;
     }
 
@@ -83,81 +75,73 @@
     .panel-card {
       background: #101e3b;
       border: 1px solid rgba(30,58,138,0.45);
-      border-radius: 18px;
-      padding: 14px;
+      border-radius: 22px;
+      padding: 18px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
     .panel-header {
       flex-shrink: 0;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
+      gap: 10px;
     }
-    .panel-title { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.12em; }
-    .panel-sub { font-size: 8.5px; color: #64748b; margin-top: 2px; }
+    .panel-title { font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; }
+    .panel-sub { font-size: 11px; color: #64748b; margin-top: 3px; line-height: 1.4; }
     .panel-badge {
-      font-size: 8px; font-weight: 800;
-      padding: 2px 8px; border-radius: 5px;
-      white-space: nowrap;
+      font-size: 10px; font-weight: 800;
+      padding: 3px 10px; border-radius: 6px;
+      white-space: nowrap; flex-shrink: 0;
     }
 
-    /* ─── PASO 1: 1 SOLO QR GRANDE ─── */
-    .col-entry {
-      display: flex;
-      flex-direction: column;
-    }
+    /* ─── PASO 1: 1 SOLO QR GRANDE DE ENTRADA ─── */
     .entry-qr-wrapper {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 14px;
+      gap: 18px;
     }
     .entry-qr-img-box {
       background: white;
-      border-radius: 16px;
-      padding: 14px;
-      box-shadow: 0 0 0 4px #22c55e, 0 0 30px rgba(34,197,94,0.35);
-      transition: box-shadow 0.3s;
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: 0 0 0 5px #22c55e, 0 0 40px rgba(34,197,94,0.4);
     }
-    .entry-qr-img-box img { display: block; width: 180px; height: 180px; }
+    .entry-qr-img-box img { display: block; width: 220px; height: 220px; }
     .entry-label {
-      font-size: 13px; font-weight: 900; color: #4ade80;
+      font-size: 16px; font-weight: 900; color: #4ade80;
       letter-spacing: 0.08em; text-transform: uppercase;
     }
     .entry-sublabel {
-      font-size: 9px; color: #64748b; text-align: center; line-height: 1.5;
-      max-width: 200px;
+      font-size: 12px; color: #64748b; text-align: center;
+      line-height: 1.55; max-width: 240px;
     }
     .data-tag {
-      font-size: 9px; font-family: monospace; font-weight: 700;
+      font-size: 11px; font-family: monospace; font-weight: 700;
       color: #cbd5e1; background: #1e293b;
-      padding: 3px 10px; border-radius: 5px;
+      padding: 4px 12px; border-radius: 6px;
     }
 
     /* ─── PASO 2: GRID DE 20 PLAZAS ─── */
-    .col-slots {
-      display: flex;
-      flex-direction: column;
-    }
     .slot-grid {
       flex: 1;
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      gap: 7px;
+      gap: 8px;
       overflow-y: auto;
     }
     .slot-card {
-      border: 2px solid #22c55e;
+      border: 2.5px solid #22c55e;
       background: rgba(21,128,61,0.1);
-      border-radius: 13px;
-      padding: 6px 4px;
+      border-radius: 14px;
+      padding: 8px 5px;
       display: flex; flex-direction: column;
-      align-items: center; gap: 4px;
+      align-items: center; gap: 5px;
       transition: all 0.35s ease;
     }
     .slot-card.ocupado {
@@ -165,55 +149,50 @@
       background: rgba(153,27,27,0.12);
     }
     .slot-label {
-      font-size: 10px; font-weight: 900;
-      color: #4ade80; letter-spacing: 0.04em;
+      font-size: 13px; font-weight: 900;
+      color: #4ade80; letter-spacing: 0.03em;
     }
     .slot-card.ocupado .slot-label { color: #f87171; }
 
     .qr-box {
-      background: white; border-radius: 7px; padding: 4px; line-height: 0;
+      background: white; border-radius: 9px; padding: 5px; line-height: 0;
     }
     .qr-box img {
-      width: 50px; height: 50px; display: block;
+      width: 70px; height: 70px; display: block;
       transition: opacity 0.3s;
     }
     .slot-card.ocupado .qr-box img { opacity: 0.18; }
 
     .slot-badge {
-      font-size: 7px; font-weight: 900; text-transform: uppercase;
-      letter-spacing: 0.05em; padding: 2px 5px; border-radius: 4px;
+      font-size: 9px; font-weight: 900; text-transform: uppercase;
+      letter-spacing: 0.04em; padding: 2px 7px; border-radius: 5px;
       background: #22c55e; color: #052e16;
     }
     .slot-card.ocupado .slot-badge { background: #ef4444; color: white; }
 
     /* ─── PASO 3: SALIDA ─── */
-    .col-exit {
-      display: flex;
-      flex-direction: column;
-    }
+    .col-exit { display: flex; flex-direction: column; }
     .exit-body {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 12px;
+      gap: 16px;
       background: #0b1329;
-      border-radius: 12px;
+      border-radius: 14px;
       border: 1px solid rgba(30,58,138,0.35);
-      padding: 14px;
+      padding: 18px;
     }
     .exit-qr-box {
-      background: white; border-radius: 12px; padding: 10px;
-      box-shadow: 0 0 0 3px #f87171, 0 0 20px rgba(248,113,113,0.3);
+      background: white; border-radius: 16px; padding: 12px;
+      box-shadow: 0 0 0 4px #f87171, 0 0 28px rgba(248,113,113,0.35);
     }
-    .exit-qr-box img { display: block; width: 130px; height: 130px; }
-    .exit-desc {
-      text-align: center;
-    }
-    .exit-desc .tag { font-size: 8px; font-weight: 800; color: #f87171; text-transform: uppercase; letter-spacing: 0.12em; }
-    .exit-desc h3 { font-size: 12px; font-weight: 900; color: white; margin: 3px 0; }
-    .exit-desc p { font-size: 8px; color: #64748b; line-height: 1.5; }
+    .exit-qr-box img { display: block; width: 160px; height: 160px; }
+    .exit-desc { text-align: center; }
+    .exit-desc .tag { font-size: 10px; font-weight: 800; color: #f87171; text-transform: uppercase; letter-spacing: 0.12em; }
+    .exit-desc h3 { font-size: 15px; font-weight: 900; color: white; margin: 5px 0; }
+    .exit-desc p { font-size: 11px; color: #64748b; line-height: 1.5; }
   </style>
 </head>
 <body>
@@ -240,30 +219,30 @@
   <main>
 
     <!-- COLUMNA 1: PASO 1 - UN SOLO QR DE ENTRADA -->
-    <div class="panel-card col-entry">
+    <div class="panel-card">
       <div class="panel-header">
         <div>
           <div class="panel-title" style="color:#93c5fd;">PASO 1: Registrar Entrada</div>
-          <div class="panel-sub">Escanea este QR para iniciar el registro (Tarifa: 20 MO). El sistema asignará una plaza automáticamente.</div>
+          <div class="panel-sub">Escanea este QR para iniciar el registro. El sistema auto-asigna una plaza y descuenta 20 MO.</div>
         </div>
         <span class="panel-badge" style="background:rgba(30,58,138,0.4);border:1px solid rgba(30,58,138,0.6);color:#bfdbfe;">Entrada</span>
       </div>
       <div class="entry-qr-wrapper">
         <div class="entry-qr-img-box">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=200&data=ACCESO_ENTRADA" alt="QR Entrada General" />
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=240&data=ACCESO_ENTRADA" alt="QR Entrada General" />
         </div>
         <div class="entry-label">Plaza Auto-Asignada</div>
-        <div class="entry-sublabel">Al escanear, el backend registra tu ingreso y deduce 20 MO de tu saldo.</div>
+        <div class="entry-sublabel">Al escanear, el sistema registra tu ingreso y deduce 20 MO de tu saldo de manera automática.</div>
         <span class="data-tag">Data: ACCESO_ENTRADA</span>
       </div>
     </div>
 
-    <!-- COLUMNA 2: PASO 2 - LOS 20 QRs FÍSICOS DE PLAZAS -->
-    <div class="panel-card col-slots">
+    <!-- COLUMNA 2: PASO 2 - LOS 20 QRs FÍSICOS -->
+    <div class="panel-card">
       <div class="panel-header">
         <div>
           <div class="panel-title" style="color:#4ade80;">PASO 2: Confirmación en Plaza Física</div>
-          <div class="panel-sub">Después del Paso 1, escanea el QR ubicado en el pilar de la plaza que el sistema te asignó.</div>
+          <div class="panel-sub">Después del Paso 1, escanea el QR del pilar de la plaza que el sistema te asignó.</div>
         </div>
         <span class="panel-badge" style="background:rgba(20,83,45,0.3);border:1px solid rgba(20,83,45,0.5);color:#86efac;">Confirmación</span>
       </div>
@@ -275,19 +254,19 @@
       <div class="panel-header">
         <div>
           <div class="panel-title" style="color:#f87171;">PASO 3: Salida</div>
-          <div class="panel-sub">Escanea para liberar tu plaza y abrir la barrera.</div>
+          <div class="panel-sub">Escanea para liberar tu plaza y abrir la barrera de salida.</div>
         </div>
         <span class="panel-badge" style="background:rgba(127,29,29,0.3);border:1px solid rgba(127,29,29,0.4);color:#fca5a5;">Salida</span>
       </div>
       <div class="exit-body">
         <div class="exit-qr-box">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150&data=ACCESO_SALIDA" alt="QR Salida" />
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=180&data=ACCESO_SALIDA" alt="QR Salida" />
         </div>
         <div class="exit-desc">
           <div class="tag">Punto de Control Fijo</div>
           <h3>BARRERA DE SALIDA</h3>
           <p>Libera tu plaza y confirma que tus pagos están al día.</p>
-          <span class="data-tag" style="display:inline-block;margin-top:8px;">Data: ACCESO_SALIDA</span>
+          <span class="data-tag" style="display:inline-block;margin-top:10px;">Data: ACCESO_SALIDA</span>
         </div>
       </div>
     </div>
@@ -295,7 +274,7 @@
   </main>
 
   <script>
-    // 20 plazas definidas estáticamente — se renderizan inmediatamente sin esperar el backend
+    // 20 plazas definidas estáticamente - se renderizan inmediatamente sin esperar al backend
     const PLAZAS = [
       'A-1','A-2','A-3','A-4','A-5',
       'A-6','A-7','A-8','A-9','A-10',
@@ -303,7 +282,6 @@
       'B-6','B-7','B-8','B-9','B-10'
     ];
 
-    // Render estático inicial
     function renderInitial() {
       const grid = document.getElementById('grid-slots');
       grid.innerHTML = PLAZAS.map(p => `
@@ -311,7 +289,7 @@
           <span class="slot-label">${p}</span>
           <div class="qr-box">
             <img
-              src="https://api.qrserver.com/v1/create-qr-code/?size=80&data=${encodeURIComponent(p)}"
+              src="https://api.qrserver.com/v1/create-qr-code/?size=100&data=${encodeURIComponent(p)}"
               alt="QR ${p}"
             />
           </div>
@@ -320,20 +298,18 @@
       `).join('');
     }
 
-    // Actualizar estados de plazas sin re-renderizar imágenes
     function applyEstados(slots) {
-      // Por defecto, liberar todo
       PLAZAS.forEach(p => {
         const card = document.getElementById('slot-' + p.replace('-','_'));
         if (!card) return;
         card.classList.remove('ocupado');
         card.querySelector('.slot-label').style.color = '#4ade80';
-        card.querySelector('.slot-badge').textContent = 'DISPONIBLE';
-        card.querySelector('.slot-badge').style.background = '#22c55e';
-        card.querySelector('.slot-badge').style.color = '#052e16';
+        const badge = card.querySelector('.slot-badge');
+        badge.textContent = 'DISPONIBLE';
+        badge.style.background = '#22c55e';
+        badge.style.color = '#052e16';
       });
 
-      // Marcar las ocupadas
       if (Array.isArray(slots)) {
         slots.forEach(slot => {
           if (slot.estado !== 'Ocupado') return;
@@ -342,14 +318,14 @@
           if (!card) return;
           card.classList.add('ocupado');
           card.querySelector('.slot-label').style.color = '#f87171';
-          card.querySelector('.slot-badge').textContent = 'OCUPADA';
-          card.querySelector('.slot-badge').style.background = '#ef4444';
-          card.querySelector('.slot-badge').style.color = 'white';
+          const badge = card.querySelector('.slot-badge');
+          badge.textContent = 'OCUPADA';
+          badge.style.background = '#ef4444';
+          badge.style.color = 'white';
         });
       }
     }
 
-    // Polling al backend
     async function fetchParkingState() {
       try {
         const res = await fetch('/api/parking/slots');
@@ -357,19 +333,15 @@
         const data = await res.json();
         applyEstados(data.slots || []);
       } catch (e) {
-        // sin backend: todos en verde por defecto
+        // sin backend: todos en verde
       }
     }
 
-    // Reiniciar demostración
     async function resetDemonstration() {
-      try {
-        await fetch('/api/parking/reset', { method: 'POST' });
-      } catch (e) {}
+      try { await fetch('/api/parking/reset', { method: 'POST' }); } catch (e) {}
       applyEstados([]);
     }
 
-    // Iniciar
     renderInitial();
     fetchParkingState();
     setInterval(fetchParkingState, 1500);
