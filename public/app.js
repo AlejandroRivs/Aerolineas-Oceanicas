@@ -413,7 +413,6 @@ function App() {
 
     try {
       if (qrStep === 1) {
-        setSelectedParkingSlot(plazaId);
         const res = await fetch('/api/parking/qr-entrada', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -421,7 +420,10 @@ function App() {
         });
         const data = await res.json();
         if (res.ok) {
-          setParkingStatusMsg(`Paso 1 Completado: Auto ingresado en la plaza ${plazaId}. Cobro inicial de ${tarifaParking} MO realizado.`);
+          // Si se usó el QR general, el backend devuelve la plaza auto-asignada
+          const plazaAsignada = data.identificador_plaza || plazaId;
+          setSelectedParkingSlot(plazaAsignada);
+          setParkingStatusMsg(`Paso 1 Completado: Auto ingresado en la plaza ${plazaAsignada}. Cobro inicial de ${tarifaParking} MO realizado.`);
           setQrStep(2);
           fetchParking();
           fetchSession();

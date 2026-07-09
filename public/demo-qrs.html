@@ -5,20 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Oceánica Parking - Panel de Proyección en Vivo</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: { extend: { fontFamily: { sans: ['Outfit', 'sans-serif'] } } }
-    }
-  </script>
   <style>
-    * { box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background: #0b1329;
       color: #f8fafc;
       font-family: 'Outfit', sans-serif;
-      margin: 0;
-      padding: 0;
       height: 100vh;
       overflow: hidden;
       display: flex;
@@ -26,260 +18,284 @@
     }
     ::-webkit-scrollbar { display: none; }
 
-    /* GRID DE PLAZAS */
-    .slot-grid {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 6px;
-      overflow-y: auto;
-    }
-
-    /* TARJETA DE PLAZA */
-    .slot-card {
-      border: 2.5px solid #22c55e;
-      background: rgba(21, 128, 61, 0.1);
-      border-radius: 14px;
-      padding: 6px 4px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      transition: all 0.35s ease;
-    }
-    .slot-card.ocupado {
-      border-color: #ef4444;
-      background: rgba(153, 27, 27, 0.12);
-    }
-    .slot-card .slot-label {
-      font-size: 11px;
-      font-weight: 900;
-      color: #4ade80;
-      letter-spacing: 0.05em;
-    }
-    .slot-card.ocupado .slot-label {
-      color: #f87171;
-    }
-    .slot-card .qr-wrapper {
-      background: #ffffff;
-      border-radius: 8px;
-      padding: 5px;
-      line-height: 0;
-    }
-    .slot-card .qr-wrapper img {
-      width: 52px;
-      height: 52px;
-      display: block;
-      transition: opacity 0.3s;
-    }
-    .slot-card.ocupado .qr-wrapper img {
-      opacity: 0.2;
-    }
-    .slot-card .badge {
-      font-size: 7.5px;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      padding: 2px 6px;
-      border-radius: 5px;
-      background: #22c55e;
-      color: #052e16;
-    }
-    .slot-card.ocupado .badge {
-      background: #ef4444;
-      color: #fff;
-    }
-
-    /* LAYOUT */
+    /* ─── HEADER ─── */
     header {
       background: #162b4e;
-      border-bottom: 1px solid rgba(30, 58, 138, 0.6);
+      border-bottom: 1px solid rgba(30,58,138,0.55);
       padding: 10px 28px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-shrink: 0;
     }
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo-box {
+      width: 36px; height: 36px;
+      background: white;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; color: #0f172a; font-size: 11px;
+    }
+    .header-title { font-size: 14px; font-weight: 900; letter-spacing: 0.1em; color: white; }
+    .header-sub { font-size: 8.5px; color: #bfdbfe; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+
+    .live-badge {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(15,23,70,0.6);
+      padding: 5px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(30,58,138,0.5);
+      font-size: 11px; font-weight: 700; color: #bfdbfe;
+    }
+    .dot-live {
+      width: 8px; height: 8px;
+      background: #22c55e; border-radius: 50%;
+      animation: blink 1.4s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    .btn-reset {
+      background: #D94E1F; color: white;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 900; font-size: 11px;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      padding: 8px 18px; border: none; border-radius: 10px;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .btn-reset:hover { background: #b83f16; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+
+    /* ─── MAIN LAYOUT ─── */
     main {
       flex: 1;
       display: grid;
-      grid-template-columns: 5fr 7fr;
-      gap: 14px;
-      padding: 14px;
-      overflow: hidden;
-    }
-    .col-left {
-      display: flex;
-      flex-direction: column;
+      grid-template-columns: 340px 1fr 240px;
       gap: 12px;
+      padding: 12px;
       overflow: hidden;
     }
-    .col-right {
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
+
+    /* ─── PANEL CARD ─── */
     .panel-card {
       background: #101e3b;
-      border: 1px solid rgba(30, 58, 138, 0.5);
-      border-radius: 20px;
+      border: 1px solid rgba(30,58,138,0.45);
+      border-radius: 18px;
       padding: 14px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
-    .panel-card-header {
-      margin-bottom: 10px;
+    .panel-header {
       flex-shrink: 0;
+      margin-bottom: 12px;
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
     }
-    .panel-title {
-      font-size: 11px;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-    }
-    .panel-subtitle {
-      font-size: 9px;
-      color: #94a3b8;
-      margin-top: 2px;
-    }
+    .panel-title { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.12em; }
+    .panel-sub { font-size: 8.5px; color: #64748b; margin-top: 2px; }
     .panel-badge {
-      font-size: 8px;
-      font-weight: 800;
-      padding: 2px 8px;
-      border-radius: 6px;
+      font-size: 8px; font-weight: 800;
+      padding: 2px 8px; border-radius: 5px;
       white-space: nowrap;
     }
 
-    /* PASO 3 */
-    .exit-section {
-      flex-shrink: 0;
-      height: 180px;
-    }
-    .exit-inner {
+    /* ─── PASO 1: 1 SOLO QR GRANDE ─── */
+    .col-entry {
       display: flex;
+      flex-direction: column;
+    }
+    .entry-qr-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 18px;
+      justify-content: center;
+      gap: 14px;
+    }
+    .entry-qr-img-box {
+      background: white;
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 0 0 4px #22c55e, 0 0 30px rgba(34,197,94,0.35);
+      transition: box-shadow 0.3s;
+    }
+    .entry-qr-img-box img { display: block; width: 180px; height: 180px; }
+    .entry-label {
+      font-size: 13px; font-weight: 900; color: #4ade80;
+      letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .entry-sublabel {
+      font-size: 9px; color: #64748b; text-align: center; line-height: 1.5;
+      max-width: 200px;
+    }
+    .data-tag {
+      font-size: 9px; font-family: monospace; font-weight: 700;
+      color: #cbd5e1; background: #1e293b;
+      padding: 3px 10px; border-radius: 5px;
+    }
+
+    /* ─── PASO 2: GRID DE 20 PLAZAS ─── */
+    .col-slots {
+      display: flex;
+      flex-direction: column;
+    }
+    .slot-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 7px;
+      overflow-y: auto;
+    }
+    .slot-card {
+      border: 2px solid #22c55e;
+      background: rgba(21,128,61,0.1);
+      border-radius: 13px;
+      padding: 6px 4px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 4px;
+      transition: all 0.35s ease;
+    }
+    .slot-card.ocupado {
+      border-color: #ef4444;
+      background: rgba(153,27,27,0.12);
+    }
+    .slot-label {
+      font-size: 10px; font-weight: 900;
+      color: #4ade80; letter-spacing: 0.04em;
+    }
+    .slot-card.ocupado .slot-label { color: #f87171; }
+
+    .qr-box {
+      background: white; border-radius: 7px; padding: 4px; line-height: 0;
+    }
+    .qr-box img {
+      width: 50px; height: 50px; display: block;
+      transition: opacity 0.3s;
+    }
+    .slot-card.ocupado .qr-box img { opacity: 0.18; }
+
+    .slot-badge {
+      font-size: 7px; font-weight: 900; text-transform: uppercase;
+      letter-spacing: 0.05em; padding: 2px 5px; border-radius: 4px;
+      background: #22c55e; color: #052e16;
+    }
+    .slot-card.ocupado .slot-badge { background: #ef4444; color: white; }
+
+    /* ─── PASO 3: SALIDA ─── */
+    .col-exit {
+      display: flex;
+      flex-direction: column;
+    }
+    .exit-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
       background: #0b1329;
-      border-radius: 14px;
-      border: 1px solid rgba(30, 58, 138, 0.4);
-      padding: 10px 14px;
-      height: 100%;
+      border-radius: 12px;
+      border: 1px solid rgba(30,58,138,0.35);
+      padding: 14px;
     }
-
-    /* BOTÓN RESET */
-    .btn-reset {
-      background: #D94E1F;
-      color: white;
-      font-weight: 900;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      padding: 8px 16px;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: background 0.2s;
+    .exit-qr-box {
+      background: white; border-radius: 12px; padding: 10px;
+      box-shadow: 0 0 0 3px #f87171, 0 0 20px rgba(248,113,113,0.3);
     }
-    .btn-reset:hover { background: #b83f16; }
-
-    /* STATUS DOT */
-    .dot-live {
-      width: 8px; height: 8px;
-      background: #22c55e;
-      border-radius: 50%;
-      animation: pulse 1.4s ease-in-out infinite;
+    .exit-qr-box img { display: block; width: 130px; height: 130px; }
+    .exit-desc {
+      text-align: center;
     }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.85); }
-    }
+    .exit-desc .tag { font-size: 8px; font-weight: 800; color: #f87171; text-transform: uppercase; letter-spacing: 0.12em; }
+    .exit-desc h3 { font-size: 12px; font-weight: 900; color: white; margin: 3px 0; }
+    .exit-desc p { font-size: 8px; color: #64748b; line-height: 1.5; }
   </style>
 </head>
 <body>
 
   <!-- HEADER -->
   <header>
-    <div style="display:flex;align-items:center;gap:14px;">
-      <div style="width:36px;height:36px;background:white;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#0f172a;font-size:12px;">
-        AO
-      </div>
+    <div class="header-logo">
+      <div class="logo-box">AO</div>
       <div>
-        <div style="font-size:15px;font-weight:900;letter-spacing:0.1em;color:white;">AEROLÍNEAS OCEÁNICAS</div>
-        <div style="font-size:9px;color:#bfdbfe;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;">Panel de Proyección del Estacionamiento en Vivo</div>
+        <div class="header-title">AEROLÍNEAS OCEÁNICAS</div>
+        <div class="header-sub">Panel de Proyección del Estacionamiento en Vivo</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:12px;">
-      <div style="display:flex;align-items:center;gap:8px;background:rgba(15,23,70,0.6);padding:6px 14px;border-radius:10px;border:1px solid rgba(30,58,138,0.5);">
+    <div class="header-right">
+      <div class="live-badge">
         <div class="dot-live"></div>
-        <span style="font-size:11px;font-weight:700;color:#bfdbfe;">Tiempo Real</span>
+        Tiempo Real
       </div>
       <button class="btn-reset" onclick="resetDemonstration()">Reiniciar Demostración</button>
     </div>
   </header>
 
-  <!-- MAIN -->
+  <!-- MAIN: 3 COLUMNAS -->
   <main>
 
-    <!-- COLUMNA IZQUIERDA: PASO 1 + PASO 3 -->
-    <div class="col-left">
-
-      <!-- PASO 1 -->
-      <div class="panel-card" style="flex:1;">
-        <div class="panel-card-header">
-          <div>
-            <div class="panel-title" style="color:#93c5fd;">PASO 1: Entrada y Selección de Plaza</div>
-            <div class="panel-subtitle">Escanea una plaza disponible para registrar el ingreso (Tarifa: 20 MO)</div>
-          </div>
-          <span class="panel-badge" style="background:rgba(30,58,138,0.4);border:1px solid rgba(30,58,138,0.6);color:#bfdbfe;">Entrada</span>
+    <!-- COLUMNA 1: PASO 1 - UN SOLO QR DE ENTRADA -->
+    <div class="panel-card col-entry">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title" style="color:#93c5fd;">PASO 1: Registrar Entrada</div>
+          <div class="panel-sub">Escanea este QR para iniciar el registro (Tarifa: 20 MO). El sistema asignará una plaza automáticamente.</div>
         </div>
-        <div id="grid-paso1" class="slot-grid" style="flex:1;"></div>
+        <span class="panel-badge" style="background:rgba(30,58,138,0.4);border:1px solid rgba(30,58,138,0.6);color:#bfdbfe;">Entrada</span>
       </div>
-
-      <!-- PASO 3 -->
-      <div class="panel-card exit-section">
-        <div class="panel-card-header">
-          <div>
-            <div class="panel-title" style="color:#f87171;">PASO 3: Registro de Salida</div>
-            <div class="panel-subtitle">Escanea para validar pagos, liberar la plaza y abrir la barrera</div>
-          </div>
-          <span class="panel-badge" style="background:rgba(127,29,29,0.3);border:1px solid rgba(127,29,29,0.4);color:#fca5a5;">Salida</span>
+      <div class="entry-qr-wrapper">
+        <div class="entry-qr-img-box">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=200&data=ACCESO_ENTRADA" alt="QR Entrada General" />
         </div>
-        <div class="exit-inner">
-          <div class="qr-wrapper" style="flex-shrink:0;">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=120&data=ACCESO_SALIDA" alt="QR Salida" style="width:96px;height:96px;" />
-          </div>
-          <div>
-            <div style="font-size:9px;font-weight:800;color:#f87171;letter-spacing:0.12em;text-transform:uppercase;">Punto de Control Fijo</div>
-            <div style="font-size:13px;font-weight:900;color:white;margin:3px 0;">CÓDIGO DE BARRERA</div>
-            <div style="font-size:9px;color:#94a3b8;line-height:1.5;">Libera automáticamente cualquier plaza vinculada a tu cuenta.</div>
-            <span style="display:inline-block;margin-top:6px;font-size:9px;font-family:monospace;font-weight:700;color:#cbd5e1;background:#1e293b;padding:2px 8px;border-radius:4px;">Data: ACCESO_SALIDA</span>
-          </div>
-        </div>
+        <div class="entry-label">Plaza Auto-Asignada</div>
+        <div class="entry-sublabel">Al escanear, el backend registra tu ingreso y deduce 20 MO de tu saldo.</div>
+        <span class="data-tag">Data: ACCESO_ENTRADA</span>
       </div>
-
     </div>
 
-    <!-- COLUMNA DERECHA: PASO 2 -->
-    <div class="col-right">
-      <div class="panel-card" style="flex:1;">
-        <div class="panel-card-header">
-          <div>
-            <div class="panel-title" style="color:#4ade80;">PASO 2: Confirmación en Plaza Física</div>
-            <div class="panel-subtitle">Escanea el código QR ubicado en el pilar de tu plaza designada tras estacionarte</div>
-          </div>
-          <span class="panel-badge" style="background:rgba(20,83,45,0.3);border:1px solid rgba(20,83,45,0.5);color:#86efac;">Confirmación</span>
+    <!-- COLUMNA 2: PASO 2 - LOS 20 QRs FÍSICOS DE PLAZAS -->
+    <div class="panel-card col-slots">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title" style="color:#4ade80;">PASO 2: Confirmación en Plaza Física</div>
+          <div class="panel-sub">Después del Paso 1, escanea el QR ubicado en el pilar de la plaza que el sistema te asignó.</div>
         </div>
-        <div id="grid-paso2" class="slot-grid" style="flex:1;"></div>
+        <span class="panel-badge" style="background:rgba(20,83,45,0.3);border:1px solid rgba(20,83,45,0.5);color:#86efac;">Confirmación</span>
+      </div>
+      <div id="grid-slots" class="slot-grid"></div>
+    </div>
+
+    <!-- COLUMNA 3: PASO 3 - QR FIJO DE SALIDA -->
+    <div class="panel-card col-exit">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title" style="color:#f87171;">PASO 3: Salida</div>
+          <div class="panel-sub">Escanea para liberar tu plaza y abrir la barrera.</div>
+        </div>
+        <span class="panel-badge" style="background:rgba(127,29,29,0.3);border:1px solid rgba(127,29,29,0.4);color:#fca5a5;">Salida</span>
+      </div>
+      <div class="exit-body">
+        <div class="exit-qr-box">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150&data=ACCESO_SALIDA" alt="QR Salida" />
+        </div>
+        <div class="exit-desc">
+          <div class="tag">Punto de Control Fijo</div>
+          <h3>BARRERA DE SALIDA</h3>
+          <p>Libera tu plaza y confirma que tus pagos están al día.</p>
+          <span class="data-tag" style="display:inline-block;margin-top:8px;">Data: ACCESO_SALIDA</span>
+        </div>
       </div>
     </div>
 
   </main>
 
   <script>
-    // Definición estática de las 20 plazas (los QRs se muestran SIEMPRE aunque falle el backend)
+    // 20 plazas definidas estáticamente — se renderizan inmediatamente sin esperar el backend
     const PLAZAS = [
       'A-1','A-2','A-3','A-4','A-5',
       'A-6','A-7','A-8','A-9','A-10',
@@ -287,97 +303,61 @@
       'B-6','B-7','B-8','B-9','B-10'
     ];
 
-    // Estado local de las plazas (por defecto todas libres)
-    const slotEstados = {};
-    PLAZAS.forEach(p => slotEstados[p] = 'Libre');
-
-    // Generar HTML de una tarjeta de plaza
-    function buildCard(plazaId, ocupado) {
-      const cardClass = ocupado ? 'slot-card ocupado' : 'slot-card';
-      const badge = ocupado ? 'OCUPADA' : 'DISPONIBLE';
-      return `
-        <div class="${cardClass}" id="card-paso1-${plazaId.replace('-','')}">
-          <span class="slot-label">${plazaId}</span>
-          <div class="qr-wrapper">
-            <img
-              src="https://api.qrserver.com/v1/create-qr-code/?size=80&data=${encodeURIComponent(plazaId)}"
-              alt="QR ${plazaId}"
-            />
-          </div>
-          <span class="badge">${badge}</span>
-        </div>`;
-    }
-
-    function buildCard2(plazaId, ocupado) {
-      const cardClass = ocupado ? 'slot-card ocupado' : 'slot-card';
-      const badge = ocupado ? 'OCUPADA' : 'DISPONIBLE';
-      return `
-        <div class="${cardClass}" id="card-paso2-${plazaId.replace('-','')}">
-          <span class="slot-label">${plazaId}</span>
-          <div class="qr-wrapper">
-            <img
-              src="https://api.qrserver.com/v1/create-qr-code/?size=80&data=${encodeURIComponent(plazaId)}"
-              alt="QR ${plazaId}"
-            />
-          </div>
-          <span class="badge">${badge}</span>
-        </div>`;
-    }
-
-    // Render inicial estático — se ejecuta inmediatamente sin esperar al backend
+    // Render estático inicial
     function renderInitial() {
-      const g1 = document.getElementById('grid-paso1');
-      const g2 = document.getElementById('grid-paso2');
-      g1.innerHTML = PLAZAS.map(p => buildCard(p, false)).join('');
-      g2.innerHTML = PLAZAS.map(p => buildCard2(p, false)).join('');
+      const grid = document.getElementById('grid-slots');
+      grid.innerHTML = PLAZAS.map(p => `
+        <div class="slot-card" id="slot-${p.replace('-','_')}">
+          <span class="slot-label">${p}</span>
+          <div class="qr-box">
+            <img
+              src="https://api.qrserver.com/v1/create-qr-code/?size=80&data=${encodeURIComponent(p)}"
+              alt="QR ${p}"
+            />
+          </div>
+          <span class="slot-badge">DISPONIBLE</span>
+        </div>
+      `).join('');
     }
 
-    // Actualizar solo el estado visual de las tarjetas existentes (sin re-renderizar imágenes)
+    // Actualizar estados de plazas sin re-renderizar imágenes
     function applyEstados(slots) {
-      // Resetear todo primero
-      PLAZAS.forEach(p => slotEstados[p] = 'Libre');
+      // Por defecto, liberar todo
+      PLAZAS.forEach(p => {
+        const card = document.getElementById('slot-' + p.replace('-','_'));
+        if (!card) return;
+        card.classList.remove('ocupado');
+        card.querySelector('.slot-label').style.color = '#4ade80';
+        card.querySelector('.slot-badge').textContent = 'DISPONIBLE';
+        card.querySelector('.slot-badge').style.background = '#22c55e';
+        card.querySelector('.slot-badge').style.color = '#052e16';
+      });
 
-      // Aplicar datos del backend
+      // Marcar las ocupadas
       if (Array.isArray(slots)) {
         slots.forEach(slot => {
-          const id = slot.identificador_plaza;
-          if (id) slotEstados[id] = slot.estado || 'Libre';
+          if (slot.estado !== 'Ocupado') return;
+          const p = slot.identificador_plaza;
+          const card = document.getElementById('slot-' + p.replace('-','_'));
+          if (!card) return;
+          card.classList.add('ocupado');
+          card.querySelector('.slot-label').style.color = '#f87171';
+          card.querySelector('.slot-badge').textContent = 'OCUPADA';
+          card.querySelector('.slot-badge').style.background = '#ef4444';
+          card.querySelector('.slot-badge').style.color = 'white';
         });
       }
-
-      // Actualizar clases y badges sin tocar las imágenes
-      PLAZAS.forEach(p => {
-        const ocupado = slotEstados[p] === 'Ocupado';
-        const key = p.replace('-', '');
-
-        ['card-paso1-', 'card-paso2-'].forEach(prefix => {
-          const card = document.getElementById(prefix + key);
-          if (!card) return;
-          if (ocupado) {
-            card.classList.add('ocupado');
-          } else {
-            card.classList.remove('ocupado');
-          }
-          const badge = card.querySelector('.badge');
-          if (badge) badge.textContent = ocupado ? 'OCUPADA' : 'DISPONIBLE';
-          const label = card.querySelector('.slot-label');
-          if (label) {
-            label.style.color = ocupado ? '#f87171' : '#4ade80';
-          }
-        });
-      });
     }
 
-    // Polling al backend para estados
+    // Polling al backend
     async function fetchParkingState() {
       try {
         const res = await fetch('/api/parking/slots');
         if (!res.ok) return;
         const data = await res.json();
         applyEstados(data.slots || []);
-      } catch (err) {
-        // Si falla el backend, los QRs siguen visibles en verde (estado inicial)
-        console.warn('Backend no disponible, mostrando estado inicial.');
+      } catch (e) {
+        // sin backend: todos en verde por defecto
       }
     }
 
@@ -385,16 +365,14 @@
     async function resetDemonstration() {
       try {
         await fetch('/api/parking/reset', { method: 'POST' });
-        applyEstados([]);
-      } catch (err) {
-        applyEstados([]);
-      }
+      } catch (e) {}
+      applyEstados([]);
     }
 
-    // Inicializar
-    renderInitial();          // Renderizado inmediato, sin API
-    fetchParkingState();      // Primera consulta al backend
-    setInterval(fetchParkingState, 1500);  // Polling continuo
+    // Iniciar
+    renderInitial();
+    fetchParkingState();
+    setInterval(fetchParkingState, 1500);
   </script>
 </body>
 </html>

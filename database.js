@@ -2572,7 +2572,15 @@ const db = {
       if (!user) throw new Error('Usuario no encontrado.');
       if (user.saldo_monedas < tarifa) throw new Error('Saldo insuficiente para el primer día de parking.');
 
-      const slot = mockDb.parking[plazaId];
+      // Auto-asignar primera plaza libre si se escanea el QR de entrada general
+      let resolvedPlazaId = plazaId;
+      if (plazaId === 'ACCESO_ENTRADA') {
+        const libre = Object.values(mockDb.parking).find(s => s.estado === 'Libre');
+        if (!libre) throw new Error('No hay plazas disponibles en este momento.');
+        resolvedPlazaId = libre.identificador_plaza;
+      }
+
+      const slot = mockDb.parking[resolvedPlazaId];
       if (!slot) throw new Error('Plaza no encontrada.');
       if (slot.estado === 'Ocupado') throw new Error('La plaza ya está ocupada.');
 
@@ -2587,10 +2595,10 @@ const db = {
         usuario_id: usuarioId,
         tipo: 'Reserva Parking',
         monto: -tarifa,
-        descripcion: `Cargo inicial de entrada al parking - Plaza ${plazaId}`,
+        descripcion: `Cargo inicial de entrada al parking - Plaza ${resolvedPlazaId}`,
         fecha_transaccion: new Date().toISOString()
       });
-      return slot;
+      return { ...slot, identificador_plaza: resolvedPlazaId };
     }
 
     const { data: user, error: userErr } = await supabase
@@ -2603,10 +2611,22 @@ const db = {
       throw new Error('Saldo insuficiente para el primer día de parking.');
     }
 
+    // Auto-asignar primera plaza libre si se escanea el QR de entrada general
+    let resolvedPlazaId = plazaId;
+    if (plazaId === 'ACCESO_ENTRADA') {
+      const { data: libreSlots, error: libreErr } = await supabase
+        .from('parking_slots')
+        .select('identificador_plaza')
+        .eq('estado', 'Libre')
+        .limit(1);
+      if (libreErr || !libreSlots || libreSlots.length === 0) throw new Error('No hay plazas disponibles en este momento.');
+      resolvedPlazaId = libreSlots[0].identificador_plaza;
+    }
+
     const { data: slot, error: slotErr } = await supabase
       .from('parking_slots')
       .select('*')
-      .eq('identificador_plaza', plazaId)
+      .eq('identificador_plaza', resolvedPlazaId)
       .single();
     if (slotErr || !slot) throw new Error('Plaza no encontrada.');
     if (slot.estado === 'Ocupado') throw new Error('La plaza ya está ocupada.');
@@ -2626,7 +2646,7 @@ const db = {
         fecha_entrada: new Date().toISOString(),
         ultimo_cargo: new Date().toISOString()
       })
-      .eq('identificador_plaza', plazaId)
+      .eq('identificador_plaza', resolvedPlazaId)
       .select()
       .single();
     if (updateSlotErr) throw updateSlotErr;
@@ -2637,7 +2657,7 @@ const db = {
         usuario_id: usuarioId,
         tipo: 'Reserva Parking',
         monto: -tarifa,
-        descripcion: `Cargo inicial de entrada - Plaza ${plazaId}`
+        descripcion: `Cargo inicial de entrada - Plaza ${resolvedPlazaId}`
       }]);
     if (txErr) throw txErr;
 
