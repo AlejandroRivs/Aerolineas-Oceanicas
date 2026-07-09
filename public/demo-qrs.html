@@ -4,237 +4,397 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Oceánica Parking - Panel de Proyección en Vivo</title>
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
-  <!-- Tailwind CSS -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Outfit', 'sans-serif'],
-          }
-        }
-      }
+      theme: { extend: { fontFamily: { sans: ['Outfit', 'sans-serif'] } } }
     }
   </script>
   <style>
+    * { box-sizing: border-box; }
     body {
-      background-color: #0b1329;
+      background: #0b1329;
       color: #f8fafc;
+      font-family: 'Outfit', sans-serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
-    /* Hide scrollbar */
-    ::-webkit-scrollbar {
-      display: none;
+    ::-webkit-scrollbar { display: none; }
+
+    /* GRID DE PLAZAS */
+    .slot-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      overflow-y: auto;
+    }
+
+    /* TARJETA DE PLAZA */
+    .slot-card {
+      border: 2.5px solid #22c55e;
+      background: rgba(21, 128, 61, 0.1);
+      border-radius: 14px;
+      padding: 6px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.35s ease;
+    }
+    .slot-card.ocupado {
+      border-color: #ef4444;
+      background: rgba(153, 27, 27, 0.12);
+    }
+    .slot-card .slot-label {
+      font-size: 11px;
+      font-weight: 900;
+      color: #4ade80;
+      letter-spacing: 0.05em;
+    }
+    .slot-card.ocupado .slot-label {
+      color: #f87171;
+    }
+    .slot-card .qr-wrapper {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 5px;
+      line-height: 0;
+    }
+    .slot-card .qr-wrapper img {
+      width: 52px;
+      height: 52px;
+      display: block;
+      transition: opacity 0.3s;
+    }
+    .slot-card.ocupado .qr-wrapper img {
+      opacity: 0.2;
+    }
+    .slot-card .badge {
+      font-size: 7.5px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 2px 6px;
+      border-radius: 5px;
+      background: #22c55e;
+      color: #052e16;
+    }
+    .slot-card.ocupado .badge {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    /* LAYOUT */
+    header {
+      background: #162b4e;
+      border-bottom: 1px solid rgba(30, 58, 138, 0.6);
+      padding: 10px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 5fr 7fr;
+      gap: 14px;
+      padding: 14px;
+      overflow: hidden;
+    }
+    .col-left {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: hidden;
+    }
+    .col-right {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .panel-card {
+      background: #101e3b;
+      border: 1px solid rgba(30, 58, 138, 0.5);
+      border-radius: 20px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .panel-card-header {
+      margin-bottom: 10px;
+      flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .panel-title {
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+    .panel-subtitle {
+      font-size: 9px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+    .panel-badge {
+      font-size: 8px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+
+    /* PASO 3 */
+    .exit-section {
+      flex-shrink: 0;
+      height: 180px;
+    }
+    .exit-inner {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      background: #0b1329;
+      border-radius: 14px;
+      border: 1px solid rgba(30, 58, 138, 0.4);
+      padding: 10px 14px;
+      height: 100%;
+    }
+
+    /* BOTÓN RESET */
+    .btn-reset {
+      background: #D94E1F;
+      color: white;
+      font-weight: 900;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-reset:hover { background: #b83f16; }
+
+    /* STATUS DOT */
+    .dot-live {
+      width: 8px; height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
     }
   </style>
 </head>
-<body class="h-screen w-screen overflow-hidden flex flex-col font-sans select-none">
+<body>
 
-  <!-- Header del Panel -->
-  <header class="bg-[#162b4e] border-b border-blue-900/60 px-8 py-3.5 flex justify-between items-center shrink-0 shadow-lg">
-    <div class="flex items-center space-x-4">
-      <div class="w-9 h-9 rounded-xl bg-white flex items-center justify-center font-black text-slate-900 shadow">
+  <!-- HEADER -->
+  <header>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div style="width:36px;height:36px;background:white;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#0f172a;font-size:12px;">
         AO
       </div>
       <div>
-        <h1 class="text-lg font-black tracking-wider leading-none text-white">AEROLÍNEAS OCEÁNICAS</h1>
-        <span class="text-[10px] text-blue-200 uppercase font-bold tracking-widest">Panel de Proyección del Estacionamiento en Vivo</span>
+        <div style="font-size:15px;font-weight:900;letter-spacing:0.1em;color:white;">AEROLÍNEAS OCEÁNICAS</div>
+        <div style="font-size:9px;color:#bfdbfe;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;">Panel de Proyección del Estacionamiento en Vivo</div>
       </div>
     </div>
-    <div class="flex items-center space-x-4">
-      <div class="flex items-center space-x-2 text-xs bg-blue-950/60 px-3 py-1.5 rounded-xl border border-blue-800">
-        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span class="font-bold text-blue-100">Auditoría en Tiempo Real</span>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="display:flex;align-items:center;gap:8px;background:rgba(15,23,70,0.6);padding:6px 14px;border-radius:10px;border:1px solid rgba(30,58,138,0.5);">
+        <div class="dot-live"></div>
+        <span style="font-size:11px;font-weight:700;color:#bfdbfe;">Tiempo Real</span>
       </div>
-      <button 
-        onclick="resetDemonstration()"
-        style="background-color: #D94E1F; padding: 0.5rem 1rem; border-radius: 0.75rem; font-weight: 800; color: white;"
-      >
-        Reiniciar Demostración
-      </button>
+      <button class="btn-reset" onclick="resetDemonstration()">Reiniciar Demostración</button>
     </div>
   </header>
 
-  <!-- Contenedor Principal (Distribución en Columnas sin Scroll) -->
-  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 overflow-hidden">
-    
-    <!-- LADO IZQUIERDO: PASO 1 Y PASO 3 (5 columnas de 12) -->
-    <div class="lg:col-span-5 flex flex-col space-y-6 overflow-hidden">
-      
-      <!-- PASO 1: Selección de Plaza -->
-      <section class="flex-1 bg-[#101e3b] border border-blue-900/50 rounded-3xl p-5 flex flex-col overflow-hidden shadow-md">
-        <div class="mb-3 shrink-0 flex justify-between items-center">
-          <div>
-            <h2 class="text-sm font-black uppercase text-blue-300 tracking-widest">PASO 1: Entrada y Selección de Plaza</h2>
-            <p class="text-[10px] text-slate-400">Escanea una plaza disponible para registrar el ingreso (Tarifa: 20 MO)</p>
-          </div>
-          <span class="px-2 py-0.5 rounded-md bg-blue-900/50 border border-blue-800 text-[9px] font-bold text-blue-200">Entrada</span>
-        </div>
-        
-        <!-- Grid de Plazas Paso 1 -->
-        <div id="grid-paso1" class="flex-1 overflow-y-auto grid grid-cols-5 gap-2 pr-1">
-          <!-- Dinámico -->
-        </div>
-      </section>
+  <!-- MAIN -->
+  <main>
 
-      <!-- PASO 3: Registro de Salida -->
-      <section class="h-[210px] bg-[#101e3b] border border-blue-900/50 rounded-3xl p-5 shrink-0 flex flex-col justify-between shadow-md">
-        <div class="flex justify-between items-start">
+    <!-- COLUMNA IZQUIERDA: PASO 1 + PASO 3 -->
+    <div class="col-left">
+
+      <!-- PASO 1 -->
+      <div class="panel-card" style="flex:1;">
+        <div class="panel-card-header">
           <div>
-            <h2 class="text-sm font-black uppercase text-rose-400 tracking-widest">PASO 3: Registro de Salida</h2>
-            <p class="text-[10px] text-slate-400">Escanea para validar tus pagos, liberar la plaza y abrir la barrera</p>
+            <div class="panel-title" style="color:#93c5fd;">PASO 1: Entrada y Selección de Plaza</div>
+            <div class="panel-subtitle">Escanea una plaza disponible para registrar el ingreso (Tarifa: 20 MO)</div>
           </div>
-          <span class="px-2 py-0.5 rounded-md bg-rose-950/40 border border-rose-900/60 text-[9px] font-bold text-rose-300">Salida</span>
+          <span class="panel-badge" style="background:rgba(30,58,138,0.4);border:1px solid rgba(30,58,138,0.6);color:#bfdbfe;">Entrada</span>
         </div>
-        
-        <div class="flex items-center space-x-6 bg-[#0b1329] p-3 rounded-2xl border border-blue-900/40">
-          <div class="bg-white p-2.5 rounded-xl shadow-inner shrink-0">
-            <img 
-              src="https://api.qrserver.com/v1/create-qr-code/?size=100&data=ACCESO_SALIDA" 
-              alt="QR de Salida"
-              class="w-20 h-20"
-            />
+        <div id="grid-paso1" class="slot-grid" style="flex:1;"></div>
+      </div>
+
+      <!-- PASO 3 -->
+      <div class="panel-card exit-section">
+        <div class="panel-card-header">
+          <div>
+            <div class="panel-title" style="color:#f87171;">PASO 3: Registro de Salida</div>
+            <div class="panel-subtitle">Escanea para validar pagos, liberar la plaza y abrir la barrera</div>
           </div>
-          <div class="space-y-1.5">
-            <span class="text-[9px] font-bold text-rose-400 uppercase tracking-widest">Punto de Control Fijo</span>
-            <h3 class="text-sm font-extrabold text-white">CÓDIGO DE BARRERA</h3>
-            <p class="text-[10px] text-slate-400 leading-normal">Punto final de validación. Libera automáticamente cualquier plaza vinculada a tu cuenta.</p>
-            <span class="inline-block text-[9px] font-mono font-bold text-slate-300 bg-slate-800 px-2 py-0.5 rounded">Data: ACCESO_SALIDA</span>
+          <span class="panel-badge" style="background:rgba(127,29,29,0.3);border:1px solid rgba(127,29,29,0.4);color:#fca5a5;">Salida</span>
+        </div>
+        <div class="exit-inner">
+          <div class="qr-wrapper" style="flex-shrink:0;">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=120&data=ACCESO_SALIDA" alt="QR Salida" style="width:96px;height:96px;" />
+          </div>
+          <div>
+            <div style="font-size:9px;font-weight:800;color:#f87171;letter-spacing:0.12em;text-transform:uppercase;">Punto de Control Fijo</div>
+            <div style="font-size:13px;font-weight:900;color:white;margin:3px 0;">CÓDIGO DE BARRERA</div>
+            <div style="font-size:9px;color:#94a3b8;line-height:1.5;">Libera automáticamente cualquier plaza vinculada a tu cuenta.</div>
+            <span style="display:inline-block;margin-top:6px;font-size:9px;font-family:monospace;font-weight:700;color:#cbd5e1;background:#1e293b;padding:2px 8px;border-radius:4px;">Data: ACCESO_SALIDA</span>
           </div>
         </div>
-      </section>
+      </div>
 
     </div>
 
-    <!-- LADO DERECHO: PASO 2 (7 columnas de 12) -->
-    <div class="lg:col-span-7 flex flex-col space-y-6 overflow-hidden">
-      
-      <!-- PASO 2: Confirmación en Plaza Física -->
-      <section class="flex-1 bg-[#101e3b] border border-blue-900/50 rounded-3xl p-5 flex flex-col overflow-hidden shadow-md">
-        <div class="mb-3 shrink-0 flex justify-between items-center">
+    <!-- COLUMNA DERECHA: PASO 2 -->
+    <div class="col-right">
+      <div class="panel-card" style="flex:1;">
+        <div class="panel-card-header">
           <div>
-            <h2 class="text-sm font-black uppercase text-emerald-400 tracking-widest">PASO 2: Confirmación en Plaza Física</h2>
-            <p class="text-[10px] text-slate-400">Escanea el código QR ubicado en el pilar de tu plaza designada tras estacionarte</p>
+            <div class="panel-title" style="color:#4ade80;">PASO 2: Confirmación en Plaza Física</div>
+            <div class="panel-subtitle">Escanea el código QR ubicado en el pilar de tu plaza designada tras estacionarte</div>
           </div>
-          <span class="px-2 py-0.5 rounded-md bg-emerald-950/40 border border-emerald-900/60 text-[9px] font-bold text-emerald-300">Confirmación</span>
+          <span class="panel-badge" style="background:rgba(20,83,45,0.3);border:1px solid rgba(20,83,45,0.5);color:#86efac;">Confirmación</span>
         </div>
-
-        <!-- Grid de Plazas Paso 2 -->
-        <div id="grid-paso2" class="flex-1 overflow-y-auto grid grid-cols-5 gap-2 pr-1">
-          <!-- Dinámico -->
-        </div>
-      </section>
-
+        <div id="grid-paso2" class="slot-grid" style="flex:1;"></div>
+      </div>
     </div>
 
   </main>
 
-  <!-- Lógica y Conexión de Datos -->
   <script>
-    let parkingSlots = [];
+    // Definición estática de las 20 plazas (los QRs se muestran SIEMPRE aunque falle el backend)
+    const PLAZAS = [
+      'A-1','A-2','A-3','A-4','A-5',
+      'A-6','A-7','A-8','A-9','A-10',
+      'B-1','B-2','B-3','B-4','B-5',
+      'B-6','B-7','B-8','B-9','B-10'
+    ];
 
-    // Cargar y actualizar plazas de parking en tiempo real
+    // Estado local de las plazas (por defecto todas libres)
+    const slotEstados = {};
+    PLAZAS.forEach(p => slotEstados[p] = 'Libre');
+
+    // Generar HTML de una tarjeta de plaza
+    function buildCard(plazaId, ocupado) {
+      const cardClass = ocupado ? 'slot-card ocupado' : 'slot-card';
+      const badge = ocupado ? 'OCUPADA' : 'DISPONIBLE';
+      return `
+        <div class="${cardClass}" id="card-paso1-${plazaId.replace('-','')}">
+          <span class="slot-label">${plazaId}</span>
+          <div class="qr-wrapper">
+            <img
+              src="https://api.qrserver.com/v1/create-qr-code/?size=80&data=${encodeURIComponent(plazaId)}"
+              alt="QR ${plazaId}"
+            />
+          </div>
+          <span class="badge">${badge}</span>
+        </div>`;
+    }
+
+    function buildCard2(plazaId, ocupado) {
+      const cardClass = ocupado ? 'slot-card ocupado' : 'slot-card';
+      const badge = ocupado ? 'OCUPADA' : 'DISPONIBLE';
+      return `
+        <div class="${cardClass}" id="card-paso2-${plazaId.replace('-','')}">
+          <span class="slot-label">${plazaId}</span>
+          <div class="qr-wrapper">
+            <img
+              src="https://api.qrserver.com/v1/create-qr-code/?size=80&data=${encodeURIComponent(plazaId)}"
+              alt="QR ${plazaId}"
+            />
+          </div>
+          <span class="badge">${badge}</span>
+        </div>`;
+    }
+
+    // Render inicial estático — se ejecuta inmediatamente sin esperar al backend
+    function renderInitial() {
+      const g1 = document.getElementById('grid-paso1');
+      const g2 = document.getElementById('grid-paso2');
+      g1.innerHTML = PLAZAS.map(p => buildCard(p, false)).join('');
+      g2.innerHTML = PLAZAS.map(p => buildCard2(p, false)).join('');
+    }
+
+    // Actualizar solo el estado visual de las tarjetas existentes (sin re-renderizar imágenes)
+    function applyEstados(slots) {
+      // Resetear todo primero
+      PLAZAS.forEach(p => slotEstados[p] = 'Libre');
+
+      // Aplicar datos del backend
+      if (Array.isArray(slots)) {
+        slots.forEach(slot => {
+          const id = slot.identificador_plaza;
+          if (id) slotEstados[id] = slot.estado || 'Libre';
+        });
+      }
+
+      // Actualizar clases y badges sin tocar las imágenes
+      PLAZAS.forEach(p => {
+        const ocupado = slotEstados[p] === 'Ocupado';
+        const key = p.replace('-', '');
+
+        ['card-paso1-', 'card-paso2-'].forEach(prefix => {
+          const card = document.getElementById(prefix + key);
+          if (!card) return;
+          if (ocupado) {
+            card.classList.add('ocupado');
+          } else {
+            card.classList.remove('ocupado');
+          }
+          const badge = card.querySelector('.badge');
+          if (badge) badge.textContent = ocupado ? 'OCUPADA' : 'DISPONIBLE';
+          const label = card.querySelector('.slot-label');
+          if (label) {
+            label.style.color = ocupado ? '#f87171' : '#4ade80';
+          }
+        });
+      });
+    }
+
+    // Polling al backend para estados
     async function fetchParkingState() {
       try {
         const res = await fetch('/api/parking/slots');
         if (!res.ok) return;
         const data = await res.json();
-        parkingSlots = data.slots || [];
-        renderParkingLayout();
+        applyEstados(data.slots || []);
       } catch (err) {
-        console.error('Error al obtener estado de parking:', err);
+        // Si falla el backend, los QRs siguen visibles en verde (estado inicial)
+        console.warn('Backend no disponible, mostrando estado inicial.');
       }
     }
 
-    // Dibujar la distribución en pantalla
-    function renderParkingLayout() {
-      const containerPaso1 = document.getElementById('grid-paso1');
-      const containerPaso2 = document.getElementById('grid-paso2');
-
-      // Ordenar las plazas alfabéticamente
-      const sortedSlots = [...parkingSlots].sort((a, b) => 
-        a.identificador_plaza.localeCompare(b.identificador_plaza, undefined, { numeric: true })
-      );
-
-      // Render Paso 1 (Selección)
-      containerPaso1.innerHTML = sortedSlots.map(slot => {
-        const isOcupado = slot.estado === 'Ocupado';
-        
-        // Estilos reactivos
-        const bgClass = isOcupado ? 'bg-red-950/20 border-red-500/70' : 'bg-emerald-950/20 border-emerald-500/70';
-        const badgeClass = isOcupado ? 'bg-red-500 text-white' : 'bg-emerald-500 text-slate-950';
-        const badgeText = isOcupado ? 'OCUPADA' : 'DISPONIBLE';
-        const qrOpacity = isOcupado ? 'opacity-25' : 'opacity-100';
-
-        return `
-          <div class="border-[2.5px] rounded-2xl p-2 flex flex-col justify-between items-center text-center transition-all duration-300 ${bgClass} ${isOcupado ? 'shadow-inner' : 'shadow-md'}">
-            <span class="text-xs font-black tracking-wider ${isOcupado ? 'text-red-400' : 'text-emerald-400'}">${slot.identificador_plaza}</span>
-            
-            <div class="bg-white p-1.5 rounded-lg my-1 shadow-sm">
-              <img 
-                src="https://api.qrserver.com/v1/create-qr-code/?size=80&data=${slot.identificador_plaza}" 
-                alt="QR Plaza ${slot.identificador_plaza}"
-                class="w-14 h-14 transition-all duration-300 ${qrOpacity}"
-              />
-            </div>
-
-            <span class="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md ${badgeClass}">
-              ${badgeText}
-            </span>
-          </div>
-        `;
-      }).join('');
-
-      // Render Paso 2 (Confirmación Física)
-      containerPaso2.innerHTML = sortedSlots.map(slot => {
-        const isOcupado = slot.estado === 'Ocupado';
-        
-        // Estilos reactivos para confirmación física
-        const bgClass = isOcupado ? 'bg-red-950/10 border-red-900/40 opacity-50' : 'bg-emerald-950/20 border-emerald-500/70';
-        const badgeClass = isOcupado ? 'bg-red-900/50 text-red-200' : 'bg-emerald-500 text-slate-950';
-        const badgeText = isOcupado ? 'OCUPADA' : 'DISPONIBLE';
-        const qrOpacity = isOcupado ? 'opacity-25' : 'opacity-100';
-
-        return `
-          <div class="border-[2.5px] rounded-2xl p-2 flex flex-col justify-between items-center text-center transition-all duration-300 ${bgClass}">
-            <span class="text-xs font-black tracking-wider ${isOcupado ? 'text-red-500/70' : 'text-emerald-400'}">${slot.identificador_plaza}</span>
-            
-            <div class="bg-white p-1.5 rounded-lg my-1 shadow-sm">
-              <img 
-                src="https://api.qrserver.com/v1/create-qr-code/?size=80&data=${slot.identificador_plaza}" 
-                alt="QR Plaza ${slot.identificador_plaza}"
-                class="w-14 h-14 transition-all duration-300 ${qrOpacity}"
-              />
-            </div>
-
-            <span class="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md ${badgeClass}">
-              ${badgeText}
-            </span>
-          </div>
-        `;
-      }).join('');
-    }
-
-    // Reiniciar demostración completa
+    // Reiniciar demostración
     async function resetDemonstration() {
       try {
-        const res = await fetch('/api/parking/reset', { method: 'POST' });
-        if (res.ok) {
-          fetchParkingState();
-        } else {
-          alert('No se pudo reiniciar la demostración.');
-        }
+        await fetch('/api/parking/reset', { method: 'POST' });
+        applyEstados([]);
       } catch (err) {
-        console.error('Error al reiniciar demostración:', err);
+        applyEstados([]);
       }
     }
 
-    // Polling recurrente para visualización fluida
-    fetchParkingState();
-    setInterval(fetchParkingState, 1500);
-
+    // Inicializar
+    renderInitial();          // Renderizado inmediato, sin API
+    fetchParkingState();      // Primera consulta al backend
+    setInterval(fetchParkingState, 1500);  // Polling continuo
   </script>
 </body>
 </html>
