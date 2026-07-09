@@ -968,45 +968,7 @@ function App() {
                           {qrStep === 1 ? 'Iniciar Cámara - Entrada' : qrStep === 2 ? 'Iniciar Cámara - Confirmar Plaza' : 'Iniciar Cámara - Salida'}
                         </button>
 
-                        <div className="pt-2">
-                          <details className="text-xs text-slate-500 cursor-pointer">
-                            <summary className="font-semibold text-slate-600 hover:text-slate-800">Simulación Manual (Desarrollo)</summary>
-                            <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-                              {qrStep === 1 ? (
-                                <div className="space-y-2">
-                                  <label className="block text-[10px] font-bold uppercase text-slate-400">Seleccionar Plaza de Entrada</label>
-                                  <select 
-                                    value={selectedParkingSlot}
-                                    onChange={e => setSelectedParkingSlot(e.target.value)}
-                                    className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs"
-                                  >
-                                    <option value="">Elegir plaza...</option>
-                                    {parkingSlots.filter(s => s.estado === 'Libre').map(s => (
-                                      <option key={s.identificador_plaza} value={s.identificador_plaza}>{s.identificador_plaza}</option>
-                                    ))}
-                                  </select>
-                                  <button 
-                                    onClick={() => processQRData(selectedParkingSlot)}
-                                    disabled={!selectedParkingSlot}
-                                    className="w-full py-2 bg-[#162b4e] text-white hover:bg-[#0f1f3a] disabled:opacity-50 text-slate-700 font-bold rounded-lg text-xs transition"
-                                  >
-                                    Simular Entrada
-                                  </button>
-                                </div>
-                              ) : (
-                                <div className="space-y-2">
-                                  <p className="text-[10px] font-bold uppercase text-slate-400">Plaza Activa: {selectedParkingSlot}</p>
-                                  <button 
-                                    onClick={() => processQRData(selectedParkingSlot)}
-                                    className="w-full py-2 bg-[#162b4e] text-white hover:bg-[#0f1f3a] font-bold rounded-lg text-xs transition"
-                                  >
-                                    {qrStep === 2 ? 'Simular Escaneo de Plaza' : 'Simular Escaneo de Salida'}
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </details>
-                        </div>
+
                       </div>
                     )}
 
@@ -1017,15 +979,7 @@ function App() {
                     )}
                   </div>
 
-                  <div className="pt-4 border-t border-slate-200">
-                    <span className="text-[10px] uppercase font-bold text-amber-600 block mb-2">Simulación de Tiempos del Servidor</span>
-                    <button 
-                      onClick={handleSimulateMidnight}
-                      className="w-full py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 font-bold rounded-xl border border-amber-500/20 text-xs transition"
-                    >
-                      Simular Ciclo Diario (00:00 AM)
-                    </button>
-                  </div>
+
                 </div>
 
                 {/* Mapa del Estacionamiento */}
