@@ -267,15 +267,15 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
 
   const renderVuelosCards = (vuelosList, isFloating = false) => {
     return (
-      <div className={`grid grid-cols-1 ${isFloating ? '' : 'md:grid-cols-2 lg:grid-cols-3'} gap-6 overflow-y-auto pr-2 w-full h-full p-4`}>
+      <div className={`grid grid-cols-1 ${isFloating ? '' : 'md:grid-cols-2 lg:grid-cols-3'} gap-6 overflow-y-auto pb-16 pr-2 w-full max-h-full p-4`}>
         {vuelosList.map((pkg) => {
           const ida = pkg.vueloIda;
           const vuelta = pkg.vueloVuelta;
           const esAhorro = pkg.precioTotal <= (presupuesto * 0.7);
 
           return (
-            <div key={pkg.id} className="bg-white border border-slate-200 rounded-3xl p-5 flex flex-col justify-between shadow-lg hover:shadow-xl transition duration-200 relative overflow-hidden text-slate-800">
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#162b4e] to-emerald-500"></div>
+            <div key={pkg.id} className="bg-white border border-slate-200 rounded-3xl p-5 flex flex-col justify-between shadow-lg hover:shadow-xl transition duration-200 relative text-slate-800 min-h-[380px]">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#162b4e] to-emerald-500 rounded-t-3xl"></div>
               
               <div className="space-y-4">
                 <div className="flex justify-between items-start gap-2">
