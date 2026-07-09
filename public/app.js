@@ -35,6 +35,8 @@ function App() {
   const [selectedParkingSlot, setSelectedParkingSlot] = useState("");
   const [parkingStatusMsg, setParkingStatusMsg] = useState("");
   const [myOcupation, setMyOcupation] = useState(null);
+  const [scannerActive, setScannerActive] = useState(false);
+  const scannerRef = useRef(null);
 
   // Estados de Incidencias
   const [incidencias, setIncidencias] = useState([]);
@@ -348,51 +350,110 @@ function App() {
     }
   };
 
-  // Simulación de Parking QR
-  const handleQRAction = async () => {
+  // Lógica de Escaneo de Cámara Real
+  const startScanning = () => {
     if (!user) {
       alert("Inicie sesión primero.");
       return;
     }
+    setScannerActive(true);
+    setParkingStatusMsg("");
     
+    setTimeout(() => {
+      try {
+        const html5QrCode = new Html5Qrcode("reader");
+        scannerRef.current = html5QrCode;
+        
+        const config = { fps: 15, qrbox: { width: 250, height: 250 } };
+        
+        html5QrCode.start(
+          { facingMode: "environment" },
+          config,
+          async (decodedText) => {
+            try {
+              await html5QrCode.stop();
+              setScannerActive(false);
+            } catch (err) {
+              console.error("Error al detener cámara:", err);
+            }
+            processQRData(decodedText);
+          },
+          (errorMessage) => {
+            // Ignorar errores continuos de renderizado de frames
+          }
+        ).catch(err => {
+          alert("No se pudo iniciar la cámara: " + err.message);
+          setScannerActive(false);
+        });
+      } catch (err) {
+        alert("Error de inicialización del escáner: " + err.message);
+        setScannerActive(false);
+      }
+    }, 300);
+  };
+
+  const stopScanning = async () => {
+    if (scannerRef.current) {
+      try {
+        if (scannerRef.current.isScanning) {
+          await scannerRef.current.stop();
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      scannerRef.current = null;
+    }
+    setScannerActive(false);
+  };
+
+  // Procesamiento del valor del código QR (Plaza ID: A-1, A-2, etc.)
+  const processQRData = async (plazaIdRaw) => {
+    const plazaId = plazaIdRaw.trim();
+    if (!plazaId) return;
+
     try {
       if (qrStep === 1) {
-        if (!selectedParkingSlot) {
-          alert("Seleccione una plaza para simular el escaneo.");
-          return;
-        }
+        setSelectedParkingSlot(plazaId);
         const res = await fetch('/api/parking/qr-entrada', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plazaId: selectedParkingSlot })
+          body: JSON.stringify({ plazaId })
         });
         const data = await res.json();
         if (res.ok) {
-          setParkingStatusMsg(`Paso 1 Completado: Auto ingresado en la plaza ${selectedParkingSlot}. Cobro inicial de ${tarifaParking} MO realizado.`);
+          setParkingStatusMsg(`Paso 1 Completado: Auto ingresado en la plaza ${plazaId}. Cobro inicial de ${tarifaParking} MO realizado.`);
           setQrStep(2);
           fetchParking();
           fetchSession();
         } else {
-          alert(data.error);
+          alert("Error: " + data.error);
         }
       } else if (qrStep === 2) {
+        if (plazaId !== selectedParkingSlot) {
+          alert(`Plaza incorrecta. Escaneó ${plazaId} pero su auto está registrado en la plaza ${selectedParkingSlot}.`);
+          return;
+        }
         const res = await fetch('/api/parking/qr-plaza', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plazaId: selectedParkingSlot })
+          body: JSON.stringify({ plazaId })
         });
         const data = await res.json();
         if (res.ok) {
           setParkingStatusMsg(`Paso 2 Completado: ${data.message} Listo para cuando decida salir.`);
           setQrStep(3);
         } else {
-          alert(data.error);
+          alert("Error: " + data.error);
         }
       } else if (qrStep === 3) {
+        if (plazaId !== selectedParkingSlot) {
+          alert(`Plaza incorrecta para salida. Su auto está registrado en la plaza ${selectedParkingSlot}.`);
+          return;
+        }
         const res = await fetch('/api/parking/qr-salida', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plazaId: selectedParkingSlot })
+          body: JSON.stringify({ plazaId })
         });
         const data = await res.json();
         if (res.ok) {
@@ -402,11 +463,11 @@ function App() {
           setMyOcupation(null);
           fetchParking();
         } else {
-          alert(data.error);
+          alert("Error: " + data.error);
         }
       }
     } catch (e) {
-      alert("Error en el flujo QR: " + e.message);
+      alert("Error al procesar el código QR: " + e.message);
     }
   };
 
@@ -841,17 +902,15 @@ function App() {
           {/* TAB 2: APARCAMIENTO QR */}
           {activeTab === "parking" && (
             <div className="space-y-8">
-              
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                
-                {/* Control QR simulador */}
+                {/* Control QR de Acceso */}
                 <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-md space-y-6">
                   <div>
                     <h2 className="text-xl font-bold text-[#162b4e] flex items-center space-x-2">
                       <i data-lucide="qr-code" className="w-5 h-5 text-[#162b4e]"></i>
-                      <span>Simulador QR de Acceso</span>
+                      <span>Acceso QR de Parking</span>
                     </h2>
-                    <p className="text-xs text-slate-400 mt-1">Proceda con el escaneo de 3 pasos de código QR.</p>
+                    <p className="text-xs text-slate-400 mt-1">Usa la cámara de tu dispositivo para el flujo de acceso QR.</p>
                   </div>
 
                   {/* Pasos */}
@@ -864,42 +923,89 @@ function App() {
                   </div>
 
                   <div className="space-y-4">
-                    {qrStep === 1 && (
+                    {scannerActive ? (
                       <div className="space-y-4">
-                        <label className="block text-xs font-bold uppercase text-slate-500">Seleccione Plaza a ocupar</label>
-                        <select 
-                          value={selectedParkingSlot}
-                          onChange={e => setSelectedParkingSlot(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 focus:outline-none"
+                        <div id="reader" className="w-full max-w-sm mx-auto overflow-hidden rounded-2xl border border-slate-200 bg-black"></div>
+                        <button 
+                          onClick={stopScanning}
+                          className="w-full py-3 bg-[#D94E1F] hover:bg-[#b83f16] text-white font-bold rounded-xl transition duration-150 shadow-md text-xs uppercase"
                         >
-                          <option value="">Elegir plaza...</option>
-                          {parkingSlots.filter(s => s.estado === 'Libre').map(s => (
-                            <option key={s.identificador_plaza} value={s.identificador_plaza}>{s.identificador_plaza}</option>
-                          ))}
-                        </select>
+                          Cancelar Escaneo
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {qrStep === 1 && (
+                          <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center space-y-1">
+                            <p className="text-xs text-slate-500 font-semibold">Paso 1: Entrada al Parking</p>
+                            <p className="text-[10px] text-slate-400 leading-normal">Escanee el código QR de entrada de la plaza que desea reservar.</p>
+                          </div>
+                        )}
+
+                        {qrStep === 2 && (
+                          <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center space-y-1">
+                            <p className="text-xs text-slate-500 font-semibold">Paso 2: Confirmación en Plaza</p>
+                            <p className="text-sm font-bold text-[#162b4e]">Plaza Asignada: {selectedParkingSlot}</p>
+                            <p className="text-[10px] text-slate-400 leading-normal">Escanee el código QR físico en el pilar de su plaza.</p>
+                          </div>
+                        )}
+
+                        {qrStep === 3 && (
+                          <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center space-y-1">
+                            <p className="text-xs text-slate-500 font-semibold">Paso 3: Salida del Parking</p>
+                            <p className="text-sm font-bold text-[#162b4e]">Plaza a Liberar: {selectedParkingSlot}</p>
+                            <p className="text-[10px] text-slate-400 leading-normal">Escanee el código QR de la barrera de salida para liberar la plaza.</p>
+                          </div>
+                        )}
+
+                        <button 
+                          onClick={startScanning}
+                          className="w-full py-3 bg-[#162b4e] hover:bg-[#0f1f3a] text-white font-bold rounded-xl transition duration-150 shadow-md text-xs uppercase"
+                        >
+                          {qrStep === 1 ? 'Iniciar Cámara - Entrada' : qrStep === 2 ? 'Iniciar Cámara - Confirmar Plaza' : 'Iniciar Cámara - Salida'}
+                        </button>
+
+                        <div className="pt-2">
+                          <details className="text-xs text-slate-500 cursor-pointer">
+                            <summary className="font-semibold text-slate-600 hover:text-slate-800">Simulación Manual (Desarrollo)</summary>
+                            <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                              {qrStep === 1 ? (
+                                <div className="space-y-2">
+                                  <label className="block text-[10px] font-bold uppercase text-slate-400">Seleccionar Plaza de Entrada</label>
+                                  <select 
+                                    value={selectedParkingSlot}
+                                    onChange={e => setSelectedParkingSlot(e.target.value)}
+                                    className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs"
+                                  >
+                                    <option value="">Elegir plaza...</option>
+                                    {parkingSlots.filter(s => s.estado === 'Libre').map(s => (
+                                      <option key={s.identificador_plaza} value={s.identificador_plaza}>{s.identificador_plaza}</option>
+                                    ))}
+                                  </select>
+                                  <button 
+                                    onClick={() => processQRData(selectedParkingSlot)}
+                                    disabled={!selectedParkingSlot}
+                                    className="w-full py-2 bg-[#162b4e] text-white hover:bg-[#0f1f3a] disabled:opacity-50 text-slate-700 font-bold rounded-lg text-xs transition"
+                                  >
+                                    Simular Entrada
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="space-y-2">
+                                  <p className="text-[10px] font-bold uppercase text-slate-400">Plaza Activa: {selectedParkingSlot}</p>
+                                  <button 
+                                    onClick={() => processQRData(selectedParkingSlot)}
+                                    className="w-full py-2 bg-[#162b4e] text-white hover:bg-[#0f1f3a] font-bold rounded-lg text-xs transition"
+                                  >
+                                    {qrStep === 2 ? 'Simular Escaneo de Plaza' : 'Simular Escaneo de Salida'}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </details>
+                        </div>
                       </div>
                     )}
-
-                    {qrStep === 2 && (
-                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center space-y-2">
-                        <p className="text-xs text-slate-500">Confirme escaneo físico de plaza</p>
-                        <p className="text-sm font-bold text-[#162b4e]">Plaza Seleccionada: {selectedParkingSlot}</p>
-                      </div>
-                    )}
-
-                    {qrStep === 3 && (
-                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center space-y-2">
-                        <p className="text-xs text-slate-500">Listo para salida del vehículo</p>
-                        <p className="text-xs text-slate-400 leading-normal">Se validará que su pago esté procesado de forma exitosa.</p>
-                      </div>
-                    )}
-
-                    <button 
-                      onClick={handleQRAction}
-                      className="w-full py-3 bg-[#162b4e] hover:bg-[#0f1f3a] text-white font-bold rounded-xl transition duration-150 shadow-md text-xs uppercase"
-                    >
-                      {qrStep === 1 ? 'Escanear QR de Entrada' : qrStep === 2 ? 'Escanear QR de Plaza' : 'Escanear QR de Salida'}
-                    </button>
 
                     {parkingStatusMsg && (
                       <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl text-xs text-[#162b4e] leading-normal">
