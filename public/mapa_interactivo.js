@@ -382,8 +382,9 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
             <p className="text-slate-400 text-xs font-bold leading-normal">
               No hay vuelos exactos para los parámetros actuales.
             </p>
-            <div className="bg-slate-50 border border-slate-200 rounded-3xl p-5 space-y-3.5 text-left">
-              <span className="block text-[10px] uppercase font-black text-slate-500 tracking-wider">Sugerencias de Flexibilidad</span>
+            {searchTab === 'inteligente' && (
+              <div className="bg-slate-50 border border-slate-200 rounded-3xl p-5 space-y-3.5 text-left">
+                <span className="block text-[10px] uppercase font-black text-slate-500 tracking-wider">Sugerencias de Flexibilidad</span>
               <div className="flex flex-col space-y-2">
                 <button 
                   onClick={() => setPresupuesto(p => Math.min(userBalance || 5000, p + 500))}
@@ -410,6 +411,7 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
                 </button>
               </div>
             </div>
+            )}
           </div>
         )}
       </div>
