@@ -2206,8 +2206,24 @@ const mockDb = {
   parking: {
     'A-1': { identificador_plaza: 'A-1', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null },
     'A-2': { identificador_plaza: 'A-2', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null },
+    'A-3': { identificador_plaza: 'A-3', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null },
+    'A-4': { identificador_plaza: 'A-4', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null },
+    'A-5': { identificador_plaza: 'A-5', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null },
+    'A-6': { identificador_plaza: 'A-6', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null },
+    'A-7': { identificador_plaza: 'A-7', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null },
+    'A-8': { identificador_plaza: 'A-8', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null },
+    'A-9': { identificador_plaza: 'A-9', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null },
+    'A-10': { identificador_plaza: 'A-10', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null },
     'B-1': { identificador_plaza: 'B-1', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null },
-    'B-2': { identificador_plaza: 'B-2', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null }
+    'B-2': { identificador_plaza: 'B-2', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null },
+    'B-3': { identificador_plaza: 'B-3', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null },
+    'B-4': { identificador_plaza: 'B-4', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null },
+    'B-5': { identificador_plaza: 'B-5', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null },
+    'B-6': { identificador_plaza: 'B-6', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null },
+    'B-7': { identificador_plaza: 'B-7', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null },
+    'B-8': { identificador_plaza: 'B-8', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null },
+    'B-9': { identificador_plaza: 'B-9', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null },
+    'B-10': { identificador_plaza: 'B-10', estado: 'Libre', usuario_id: null, fecha_entrada: null, ultimo_cargo: null }
   },
   searchHistory: [],
   ticketEscalations: [
@@ -2678,6 +2694,29 @@ const db = {
       throw new Error('No se pudo validar la salida o el usuario no está al día.');
     }
     return { success: true, message: 'Salida exitosa y plaza liberada.' };
+  },
+
+  async resetAllParking() {
+    if (useMock) {
+      Object.keys(mockDb.parking).forEach(key => {
+        mockDb.parking[key].estado = 'Libre';
+        mockDb.parking[key].usuario_id = null;
+        mockDb.parking[key].fecha_entrada = null;
+        mockDb.parking[key].ultimo_cargo = null;
+      });
+      return { success: true, message: 'Todas las plazas mock han sido reiniciadas.' };
+    }
+    const { data, error } = await supabase
+      .from('parking_slots')
+      .update({
+        estado: 'Libre',
+        usuario_id: null,
+        fecha_entrada: null,
+        ultimo_cargo: null
+      })
+      .neq('estado', 'Libre');
+    if (error) throw error;
+    return { success: true, message: 'Todas las plazas de producción en Supabase han sido reiniciadas.' };
   },
 
   // --- MONGO DB MOCKS / WRAPPERS ---

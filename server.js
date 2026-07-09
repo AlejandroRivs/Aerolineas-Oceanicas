@@ -37,6 +37,9 @@ async function gatekeeperMiddleware(ctx, next) {
     '/api/gatekeeper/verify',
     '/api/gatekeeper/status',
     '/gatekeeper.html',
+    '/demo-qrs.html',
+    '/api/parking/slots',
+    '/api/parking/reset',
     '/favicon.ico'
   ];
 
@@ -491,6 +494,17 @@ router.post('/api/parking/simulate-midnight', async (ctx) => {
   } catch (error) {
     ctx.status = 500;
     ctx.body = { error: 'Error simulando cobros de medianoche.' };
+  }
+});
+
+// Reinicio global de la demostración de parking
+router.post('/api/parking/reset', async (ctx) => {
+  try {
+    const res = await db.resetAllParking();
+    ctx.body = res;
+  } catch (error) {
+    ctx.status = 500;
+    ctx.body = { error: 'Error al reiniciar el estacionamiento.' };
   }
 });
 

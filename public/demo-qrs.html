@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Oceánica Parking - Panel de Proyección en Vivo</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #0b1329;
+      color: #f8fafc;
+    }
+    /* Hide scrollbar */
+    ::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col font-sans select-none">
+
+  <!-- Header del Panel -->
+  <header class="bg-[#162b4e] border-b border-blue-900/60 px-8 py-3.5 flex justify-between items-center shrink-0 shadow-lg">
+    <div class="flex items-center space-x-4">
+      <div class="w-9 h-9 rounded-xl bg-white flex items-center justify-center font-black text-slate-900 shadow">
+        AO
+      </div>
+      <div>
+        <h1 class="text-lg font-black tracking-wider leading-none text-white">AEROLÍNEAS OCEÁNICAS</h1>
+        <span class="text-[10px] text-blue-200 uppercase font-bold tracking-widest">Panel de Proyección del Estacionamiento en Vivo</span>
+      </div>
+    </div>
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-2 text-xs bg-blue-950/60 px-3 py-1.5 rounded-xl border border-blue-800">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="font-bold text-blue-100">Auditoría en Tiempo Real</span>
+      </div>
+      <button 
+        onclick="resetDemonstration()"
+        style="background-color: #D94E1F; padding: 0.5rem 1rem; border-radius: 0.75rem; font-weight: 800; color: white;"
+      >
+        Reiniciar Demostración
+      </button>
+    </div>
+  </header>
+
+  <!-- Contenedor Principal (Distribución en Columnas sin Scroll) -->
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 overflow-hidden">
+    
+    <!-- LADO IZQUIERDO: PASO 1 Y PASO 3 (5 columnas de 12) -->
+    <div class="lg:col-span-5 flex flex-col space-y-6 overflow-hidden">
+      
+      <!-- PASO 1: Selección de Plaza -->
+      <section class="flex-1 bg-[#101e3b] border border-blue-900/50 rounded-3xl p-5 flex flex-col overflow-hidden shadow-md">
+        <div class="mb-3 shrink-0 flex justify-between items-center">
+          <div>
+            <h2 class="text-sm font-black uppercase text-blue-300 tracking-widest">PASO 1: Entrada y Selección de Plaza</h2>
+            <p class="text-[10px] text-slate-400">Escanea una plaza disponible para registrar el ingreso (Tarifa: 20 MO)</p>
+          </div>
+          <span class="px-2 py-0.5 rounded-md bg-blue-900/50 border border-blue-800 text-[9px] font-bold text-blue-200">Entrada</span>
+        </div>
+        
+        <!-- Grid de Plazas Paso 1 -->
+        <div id="grid-paso1" class="flex-1 overflow-y-auto grid grid-cols-5 gap-2 pr-1">
+          <!-- Dinámico -->
+        </div>
+      </section>
+
+      <!-- PASO 3: Registro de Salida -->
+      <section class="h-[210px] bg-[#101e3b] border border-blue-900/50 rounded-3xl p-5 shrink-0 flex flex-col justify-between shadow-md">
+        <div class="flex justify-between items-start">
+          <div>
+            <h2 class="text-sm font-black uppercase text-rose-400 tracking-widest">PASO 3: Registro de Salida</h2>
+            <p class="text-[10px] text-slate-400">Escanea para validar tus pagos, liberar la plaza y abrir la barrera</p>
+          </div>
+          <span class="px-2 py-0.5 rounded-md bg-rose-950/40 border border-rose-900/60 text-[9px] font-bold text-rose-300">Salida</span>
+        </div>
+        
+        <div class="flex items-center space-x-6 bg-[#0b1329] p-3 rounded-2xl border border-blue-900/40">
+          <div class="bg-white p-2.5 rounded-xl shadow-inner shrink-0">
+            <img 
+              src="https://api.qrserver.com/v1/create-qr-code/?size=100&data=ACCESO_SALIDA" 
+              alt="QR de Salida"
+              class="w-20 h-20"
+            />
+          </div>
+          <div class="space-y-1.5">
+            <span class="text-[9px] font-bold text-rose-400 uppercase tracking-widest">Punto de Control Fijo</span>
+            <h3 class="text-sm font-extrabold text-white">CÓDIGO DE BARRERA</h3>
+            <p class="text-[10px] text-slate-400 leading-normal">Punto final de validación. Libera automáticamente cualquier plaza vinculada a tu cuenta.</p>
+            <span class="inline-block text-[9px] font-mono font-bold text-slate-300 bg-slate-800 px-2 py-0.5 rounded">Data: ACCESO_SALIDA</span>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- LADO DERECHO: PASO 2 (7 columnas de 12) -->
+    <div class="lg:col-span-7 flex flex-col space-y-6 overflow-hidden">
+      
+      <!-- PASO 2: Confirmación en Plaza Física -->
+      <section class="flex-1 bg-[#101e3b] border border-blue-900/50 rounded-3xl p-5 flex flex-col overflow-hidden shadow-md">
+        <div class="mb-3 shrink-0 flex justify-between items-center">
+          <div>
+            <h2 class="text-sm font-black uppercase text-emerald-400 tracking-widest">PASO 2: Confirmación en Plaza Física</h2>
+            <p class="text-[10px] text-slate-400">Escanea el código QR ubicado en el pilar de tu plaza designada tras estacionarte</p>
+          </div>
+          <span class="px-2 py-0.5 rounded-md bg-emerald-950/40 border border-emerald-900/60 text-[9px] font-bold text-emerald-300">Confirmación</span>
+        </div>
+
+        <!-- Grid de Plazas Paso 2 -->
+        <div id="grid-paso2" class="flex-1 overflow-y-auto grid grid-cols-5 gap-2 pr-1">
+          <!-- Dinámico -->
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- Lógica y Conexión de Datos -->
+  <script>
+    let parkingSlots = [];
+
+    // Cargar y actualizar plazas de parking en tiempo real
+    async function fetchParkingState() {
+      try {
+        const res = await fetch('/api/parking/slots');
+        if (!res.ok) return;
+        const data = await res.json();
+        parkingSlots = data.slots || [];
+        renderParkingLayout();
+      } catch (err) {
+        console.error('Error al obtener estado de parking:', err);
+      }
+    }
+
+    // Dibujar la distribución en pantalla
+    function renderParkingLayout() {
+      const containerPaso1 = document.getElementById('grid-paso1');
+      const containerPaso2 = document.getElementById('grid-paso2');
+
+      // Ordenar las plazas alfabéticamente
+      const sortedSlots = [...parkingSlots].sort((a, b) => 
+        a.identificador_plaza.localeCompare(b.identificador_plaza, undefined, { numeric: true })
+      );
+
+      // Render Paso 1 (Selección)
+      containerPaso1.innerHTML = sortedSlots.map(slot => {
+        const isOcupado = slot.estado === 'Ocupado';
+        
+        // Estilos reactivos
+        const bgClass = isOcupado ? 'bg-red-950/20 border-red-500/70' : 'bg-emerald-950/20 border-emerald-500/70';
+        const badgeClass = isOcupado ? 'bg-red-500 text-white' : 'bg-emerald-500 text-slate-950';
+        const badgeText = isOcupado ? 'OCUPADA' : 'DISPONIBLE';
+        const qrOpacity = isOcupado ? 'opacity-25' : 'opacity-100';
+
+        return `
+          <div class="border-[2.5px] rounded-2xl p-2 flex flex-col justify-between items-center text-center transition-all duration-300 ${bgClass} ${isOcupado ? 'shadow-inner' : 'shadow-md'}">
+            <span class="text-xs font-black tracking-wider ${isOcupado ? 'text-red-400' : 'text-emerald-400'}">${slot.identificador_plaza}</span>
+            
+            <div class="bg-white p-1.5 rounded-lg my-1 shadow-sm">
+              <img 
+                src="https://api.qrserver.com/v1/create-qr-code/?size=80&data=${slot.identificador_plaza}" 
+                alt="QR Plaza ${slot.identificador_plaza}"
+                class="w-14 h-14 transition-all duration-300 ${qrOpacity}"
+              />
+            </div>
+
+            <span class="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md ${badgeClass}">
+              ${badgeText}
+            </span>
+          </div>
+        `;
+      }).join('');
+
+      // Render Paso 2 (Confirmación Física)
+      containerPaso2.innerHTML = sortedSlots.map(slot => {
+        const isOcupado = slot.estado === 'Ocupado';
+        
+        // Estilos reactivos para confirmación física
+        const bgClass = isOcupado ? 'bg-red-950/10 border-red-900/40 opacity-50' : 'bg-emerald-950/20 border-emerald-500/70';
+        const badgeClass = isOcupado ? 'bg-red-900/50 text-red-200' : 'bg-emerald-500 text-slate-950';
+        const badgeText = isOcupado ? 'OCUPADA' : 'DISPONIBLE';
+        const qrOpacity = isOcupado ? 'opacity-25' : 'opacity-100';
+
+        return `
+          <div class="border-[2.5px] rounded-2xl p-2 flex flex-col justify-between items-center text-center transition-all duration-300 ${bgClass}">
+            <span class="text-xs font-black tracking-wider ${isOcupado ? 'text-red-500/70' : 'text-emerald-400'}">${slot.identificador_plaza}</span>
+            
+            <div class="bg-white p-1.5 rounded-lg my-1 shadow-sm">
+              <img 
+                src="https://api.qrserver.com/v1/create-qr-code/?size=80&data=${slot.identificador_plaza}" 
+                alt="QR Plaza ${slot.identificador_plaza}"
+                class="w-14 h-14 transition-all duration-300 ${qrOpacity}"
+              />
+            </div>
+
+            <span class="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md ${badgeClass}">
+              ${badgeText}
+            </span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Reiniciar demostración completa
+    async function resetDemonstration() {
+      try {
+        const res = await fetch('/api/parking/reset', { method: 'POST' });
+        if (res.ok) {
+          fetchParkingState();
+        } else {
+          alert('No se pudo reiniciar la demostración.');
+        }
+      } catch (err) {
+        console.error('Error al reiniciar demostración:', err);
+      }
+    }
+
+    // Polling recurrente para visualización fluida
+    fetchParkingState();
+    setInterval(fetchParkingState, 1500);
+
+  </script>
+</body>
+</html>

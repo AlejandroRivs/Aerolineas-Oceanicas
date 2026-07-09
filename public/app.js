@@ -446,14 +446,15 @@ function App() {
           alert("Error: " + data.error);
         }
       } else if (qrStep === 3) {
-        if (plazaId !== selectedParkingSlot) {
+        const plazaToRelease = (plazaId === "ACCESO_SALIDA") ? selectedParkingSlot : plazaId;
+        if (plazaToRelease !== selectedParkingSlot) {
           alert(`Plaza incorrecta para salida. Su auto está registrado en la plaza ${selectedParkingSlot}.`);
           return;
         }
         const res = await fetch('/api/parking/qr-salida', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plazaId })
+          body: JSON.stringify({ plazaId: plazaToRelease })
         });
         const data = await res.json();
         if (res.ok) {
