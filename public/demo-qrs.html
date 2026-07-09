@@ -194,13 +194,13 @@
     .exit-desc h3 { font-size: 15px; font-weight: 900; color: white; margin: 5px 0; }
     .exit-desc p { font-size: 11px; color: #64748b; line-height: 1.5; }
 
-    /* Zoom 150% en los QRs al pasar el ratón */
+    /* Zoom 225% en los QRs al pasar el ratón sin mostrar el cursor */
     .entry-qr-img-box img, .qr-box img, .exit-qr-box img {
       transition: transform 0.3s ease, opacity 0.3s !important;
-      cursor: zoom-in;
+      cursor: none;
     }
     .entry-qr-img-box img:hover, .qr-box img:hover, .exit-qr-box img:hover {
-      transform: scale(1.5);
+      transform: scale(2.25);
       position: relative;
       z-index: 99;
     }
