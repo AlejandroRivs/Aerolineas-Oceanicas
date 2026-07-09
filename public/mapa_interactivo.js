@@ -286,12 +286,12 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
     }
   }, [vuelosFiltrados, searchTab, paisSeleccionado]);
 
-  // Obtener lugares de origen únicos de los vuelos
-  const origenesDisponibles = Array.from(new Set(vuelos.map(v => v.origen).filter(Boolean)));
-  // Obtener destinos únicos de los vuelos (solo nombres de países)
+  // Obtener lugares de origen únicos de los vuelos (ordenados alfabéticamente)
+  const origenesDisponibles = Array.from(new Set(vuelos.map(v => v.origen).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  // Obtener destinos únicos de los vuelos (solo nombres de países, ordenados alfabéticamente)
   const destinosDisponibles = Array.from(new Set(
     vuelos.map(v => v.destino_pais).filter(Boolean)
-  ));
+  )).sort((a, b) => a.localeCompare(b));
 
   const formatFecha = (fechaStr) => {
     if (!fechaStr) return 'No especificada';
@@ -842,7 +842,7 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
               </button>
             </div>
             <div className="p-6 space-y-4 max-h-[300px] overflow-y-auto">
-              {Object.keys(window.PAISES_DATA || {}).map(pais => {
+              {Object.keys(window.PAISES_DATA || {}).sort((a, b) => a.localeCompare(b)).map(pais => {
                 const isVisited = paisesVisitados.includes(pais);
                 return (
                   <label key={pais} className="flex items-center space-x-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 border border-slate-200/60 cursor-pointer select-none transition">
