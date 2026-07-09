@@ -619,14 +619,12 @@ function App() {
                   </span>
                 </div>
               </div>
-              <img 
-                src={user.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.nombre}`} 
-                alt="Avatar" 
-                className="w-10 h-10 rounded-xl border border-blue-850 bg-slate-900 shadow-sm"
-              />
+              <div className="w-10 h-10 rounded-xl border border-blue-850 bg-blue-950/50 flex items-center justify-center shadow-sm">
+                 <i data-lucide="user" className="w-5 h-5 text-blue-200"></i>
+              </div>
               <button 
                 onClick={handleLogout}
-                className="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition duration-150 shadow"
+                className="px-3.5 py-2 bg-[#D94E1F] hover:bg-[#b83f16] text-white text-xs font-bold rounded-xl transition duration-150 shadow"
               >
                 Cerrar Sesión
               </button>
