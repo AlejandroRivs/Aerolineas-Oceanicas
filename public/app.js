@@ -213,6 +213,22 @@ function App() {
     }
   }, [user, parkingSlots]);
 
+  const handleResetDemostracion = async () => {
+    if (!confirm("¿Está seguro de reiniciar todo el estacionamiento virtual?")) return;
+    try {
+      const res = await fetch('/api/parking/reset', { method: 'POST' });
+      if (res.ok) {
+        alert("Estacionamiento reiniciado exitosamente.");
+        fetchParking();
+      } else {
+        alert("Error al reiniciar el estacionamiento.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error de conexión al reiniciar.");
+    }
+  };
+
   // Manejador de Login con correo y contraseña
   const handlePasswordLogin = async (e) => {
     e.preventDefault();
@@ -1409,7 +1425,16 @@ function App() {
                   <i data-lucide="shield-alert" className="w-6 h-6 text-[#162b4e]"></i>
                   <span>Consola de Administración de Infraestructura</span>
                 </h2>
-                <p className="text-xs text-slate-400 mt-1">Control técnico absoluto y revocación de accesos.</p>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-1">
+                  <p className="text-xs text-slate-400">Control técnico absoluto y revocación de accesos.</p>
+                  <button 
+                    onClick={handleResetDemostracion}
+                    className="mt-3 sm:mt-0 px-4 py-2 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition shadow-sm flex items-center space-x-2"
+                  >
+                    <i data-lucide="refresh-cw" className="w-3 h-3"></i>
+                    <span>Reiniciar Demostración Parking</span>
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-6">
