@@ -2572,7 +2572,7 @@ const db = {
     if (useMock) {
       const user = mockDb.usuarios.find(u => u.id === Number(usuarioId));
       if (!user) throw new Error('Usuario no encontrado.');
-      if (user.saldo_monedas < tarifa) throw new Error('Saldo insuficiente para el primer día de parking.');
+      if (user.saldo_monedas < tarifa) throw new Error('No cuenta con fondos necesarios para el pago de parqueo.');
       // Verificar que el usuario no tenga ya una plaza ocupada
       const yaOcupado = Object.values(mockDb.parking).find(s => s.usuario_id === Number(usuarioId) && s.estado === 'Ocupado');
       if (yaOcupado) throw new Error(`Ya tienes la plaza ${yaOcupado.identificador_plaza} ocupada.`);
@@ -2585,7 +2585,7 @@ const db = {
       .single();
     if (userErr || !user) throw new Error('Usuario no encontrado o inexistente.');
     if (parseFloat(user.saldo_monedas) < tarifa) {
-      throw new Error('Saldo insuficiente para el primer día de parking.');
+      throw new Error('No cuenta con fondos necesarios para el pago de parqueo.');
     }
     // Verificar que el usuario no tenga ya una plaza ocupada en Supabase
     const { data: yaOcupado } = await supabase
@@ -2604,7 +2604,7 @@ const db = {
     if (useMock) {
       const user = mockDb.usuarios.find(u => u.id === Number(usuarioId));
       if (!user) throw new Error('Usuario no encontrado.');
-      if (user.saldo_monedas < tarifa) throw new Error('Saldo insuficiente.');
+      if (user.saldo_monedas < tarifa) throw new Error('No cuenta con fondos necesarios para el pago de parqueo.');
       const slot = mockDb.parking[plazaId];
       if (!slot) throw new Error('Plaza no encontrada.');
       if (slot.estado === 'Ocupado') throw new Error('Esta plaza ya está ocupada por otro usuario.');
@@ -2629,7 +2629,7 @@ const db = {
       .eq('id', usuarioId)
       .single();
     if (userErr || !user) throw new Error('Usuario no encontrado.');
-    if (parseFloat(user.saldo_monedas) < tarifa) throw new Error('Saldo insuficiente.');
+    if (parseFloat(user.saldo_monedas) < tarifa) throw new Error('No cuenta con fondos necesarios para el pago de parqueo.');
     const { data: slot, error: slotErr } = await supabase
       .from('parking_slots')
       .select('*')
