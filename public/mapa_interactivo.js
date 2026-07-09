@@ -210,9 +210,14 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
           const diffMs = fechaVuelta.getTime() - fechaIda.getTime();
           const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
-          if (diffDays === (Number(diasDisponibles) - 1)) {
+          const matchDuration = searchTab === 'inteligente' 
+            ? (diffDays === (Number(diasDisponibles) - 1))
+            : (diffDays >= 1 && diffDays <= 30);
+
+          if (matchDuration) {
             const totalPrice = ida.precio_monedas_oceanicas + vuelta.precio_monedas_oceanicas;
-            const tiempoDisponible = Number(diasDisponibles) * 24;
+            const diasEstancia = searchTab === 'inteligente' ? Number(diasDisponibles) : (diffDays + 1);
+            const tiempoDisponible = diasEstancia * 24;
             const tiempoVueloTotal = (ida.tiempo_vuelo_horas + vuelta.tiempo_vuelo_horas);
             const tiempoNetoVisita = tiempoDisponible - tiempoVueloTotal;
 
