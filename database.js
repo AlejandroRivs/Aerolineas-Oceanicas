@@ -2566,41 +2566,18 @@ const db = {
   },
 
   async qrEntrada(usuarioId, plazaId) {
+    // Paso 1: Solo valida que el usuario existe y tiene saldo suficiente.
+    // NO asigna ni registra ninguna plaza. La asignación ocurre en qrPlaza (Paso 2).
     const tarifa = await this.getTarifaParking();
     if (useMock) {
       const user = mockDb.usuarios.find(u => u.id === Number(usuarioId));
       if (!user) throw new Error('Usuario no encontrado.');
       if (user.saldo_monedas < tarifa) throw new Error('Saldo insuficiente para el primer día de parking.');
-
-      // Auto-asignar primera plaza libre si se escanea el QR de entrada general
-      let resolvedPlazaId = plazaId;
-      if (plazaId === 'ACCESO_ENTRADA') {
-        const libre = Object.values(mockDb.parking).find(s => s.estado === 'Libre');
-        if (!libre) throw new Error('No hay plazas disponibles en este momento.');
-        resolvedPlazaId = libre.identificador_plaza;
-      }
-
-      const slot = mockDb.parking[resolvedPlazaId];
-      if (!slot) throw new Error('Plaza no encontrada.');
-      if (slot.estado === 'Ocupado') throw new Error('La plaza ya está ocupada.');
-
-      user.saldo_monedas -= tarifa;
-      slot.estado = 'Ocupado';
-      slot.usuario_id = usuarioId;
-      slot.fecha_entrada = new Date().toISOString();
-      slot.ultimo_cargo = new Date().toISOString();
-
-      mockDb.transacciones.push({
-        id: mockDb.transacciones.length + 1,
-        usuario_id: usuarioId,
-        tipo: 'Reserva Parking',
-        monto: -tarifa,
-        descripcion: `Cargo inicial de entrada al parking - Plaza ${resolvedPlazaId}`,
-        fecha_transaccion: new Date().toISOString()
-      });
-      return { ...slot, identificador_plaza: resolvedPlazaId };
+      // Verificar que el usuario no tenga ya una plaza ocupada
+      const yaOcupado = Object.values(mockDb.parking).find(s => s.usuario_id === Number(usuarioId) && s.estado === 'Ocupado');
+      if (yaOcupado) throw new Error(`Ya tienes la plaza ${yaOcupado.identificador_plaza} ocupada.`);
+      return { authorized: true, message: 'Acceso autorizado. Dirígete a tu plaza y escanea el QR físico.' };
     }
-
     const { data: user, error: userErr } = await supabase
       .from('usuarios')
       .select('saldo_monedas')
@@ -2610,35 +2587,63 @@ const db = {
     if (parseFloat(user.saldo_monedas) < tarifa) {
       throw new Error('Saldo insuficiente para el primer día de parking.');
     }
+    // Verificar que el usuario no tenga ya una plaza ocupada en Supabase
+    const { data: yaOcupado } = await supabase
+      .from('parking_slots')
+      .select('identificador_plaza')
+      .eq('usuario_id', usuarioId)
+      .eq('estado', 'Ocupado')
+      .maybeSingle();
+    if (yaOcupado) throw new Error(`Ya tienes la plaza ${yaOcupado.identificador_plaza} ocupada.`);
+    return { authorized: true, message: 'Acceso autorizado. Dirígete a tu plaza y escanea el QR físico.' };
+  },
 
-    // Auto-asignar primera plaza libre si se escanea el QR de entrada general
-    let resolvedPlazaId = plazaId;
-    if (plazaId === 'ACCESO_ENTRADA') {
-      const { data: libreSlots, error: libreErr } = await supabase
-        .from('parking_slots')
-        .select('identificador_plaza')
-        .eq('estado', 'Libre')
-        .limit(1);
-      if (libreErr || !libreSlots || libreSlots.length === 0) throw new Error('No hay plazas disponibles en este momento.');
-      resolvedPlazaId = libreSlots[0].identificador_plaza;
+  async qrPlaza(usuarioId, plazaId) {
+    // Paso 2: El usuario eligió su plaza física. Aquí se registra, ocupa y cobra.
+    const tarifa = await this.getTarifaParking();
+    if (useMock) {
+      const user = mockDb.usuarios.find(u => u.id === Number(usuarioId));
+      if (!user) throw new Error('Usuario no encontrado.');
+      if (user.saldo_monedas < tarifa) throw new Error('Saldo insuficiente.');
+      const slot = mockDb.parking[plazaId];
+      if (!slot) throw new Error('Plaza no encontrada.');
+      if (slot.estado === 'Ocupado') throw new Error('Esta plaza ya está ocupada por otro usuario.');
+      user.saldo_monedas -= tarifa;
+      slot.estado = 'Ocupado';
+      slot.usuario_id = Number(usuarioId);
+      slot.fecha_entrada = new Date().toISOString();
+      slot.ultimo_cargo = new Date().toISOString();
+      mockDb.transacciones.push({
+        id: mockDb.transacciones.length + 1,
+        usuario_id: usuarioId,
+        tipo: 'Reserva Parking',
+        monto: -tarifa,
+        descripcion: `Cargo de entrada al parking - Plaza ${plazaId}`,
+        fecha_transaccion: new Date().toISOString()
+      });
+      return { success: true, message: `Plaza ${plazaId} registrada y cobro de ${tarifa} MO realizado.` };
     }
-
+    const { data: user, error: userErr } = await supabase
+      .from('usuarios')
+      .select('saldo_monedas')
+      .eq('id', usuarioId)
+      .single();
+    if (userErr || !user) throw new Error('Usuario no encontrado.');
+    if (parseFloat(user.saldo_monedas) < tarifa) throw new Error('Saldo insuficiente.');
     const { data: slot, error: slotErr } = await supabase
       .from('parking_slots')
       .select('*')
-      .eq('identificador_plaza', resolvedPlazaId)
+      .eq('identificador_plaza', plazaId)
       .single();
     if (slotErr || !slot) throw new Error('Plaza no encontrada.');
-    if (slot.estado === 'Ocupado') throw new Error('La plaza ya está ocupada.');
-
+    if (slot.estado === 'Ocupado') throw new Error('Esta plaza ya está ocupada por otro usuario.');
     const nuevoSaldo = parseFloat(user.saldo_monedas) - tarifa;
     const { error: updateU } = await supabase
       .from('usuarios')
       .update({ saldo_monedas: nuevoSaldo })
       .eq('id', usuarioId);
     if (updateU) throw updateU;
-
-    const { data: updatedSlot, error: updateSlotErr } = await supabase
+    const { error: updateSlotErr } = await supabase
       .from('parking_slots')
       .update({
         estado: 'Ocupado',
@@ -2646,44 +2651,20 @@ const db = {
         fecha_entrada: new Date().toISOString(),
         ultimo_cargo: new Date().toISOString()
       })
-      .eq('identificador_plaza', resolvedPlazaId)
-      .select()
-      .single();
+      .eq('identificador_plaza', plazaId);
     if (updateSlotErr) throw updateSlotErr;
-
     const { error: txErr } = await supabase
       .from('transacciones')
       .insert([{
         usuario_id: usuarioId,
         tipo: 'Reserva Parking',
         monto: -tarifa,
-        descripcion: `Cargo inicial de entrada - Plaza ${resolvedPlazaId}`
+        descripcion: `Cargo de entrada al parking - Plaza ${plazaId}`
       }]);
     if (txErr) throw txErr;
-
-    return updatedSlot;
+    return { success: true, message: `Plaza ${plazaId} registrada y cobro de ${tarifa} MO realizado.` };
   },
 
-  async qrPlaza(usuarioId, plazaId) {
-    if (useMock) {
-      const slot = mockDb.parking[plazaId];
-      if (!slot) throw new Error('Plaza no encontrada.');
-      if (slot.usuario_id !== Number(usuarioId)) {
-        throw new Error('Esta plaza no está reservada por este usuario.');
-      }
-      return { success: true, message: `Plaza ${plazaId} vinculada y confirmada físicamente.` };
-    }
-    const { data, error } = await supabase
-      .from('parking_slots')
-      .select('*')
-      .eq('identificador_plaza', plazaId)
-      .eq('usuario_id', usuarioId)
-      .maybeSingle();
-    if (error || !data) {
-      throw new Error('Vinculación física no válida.');
-    }
-    return { success: true, message: `Plaza ${plazaId} confirmada.` };
-  },
 
   async qrSalida(usuarioId, plazaId) {
     if (useMock) {

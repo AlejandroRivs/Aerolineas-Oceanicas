@@ -419,6 +419,11 @@ function App() {
 
     try {
       if (qrStep === 1) {
+        // Solo acepta el QR de entrada general
+        if (plazaId !== 'ACCESO_ENTRADA') {
+          alert('Escanea el código QR de entrada del panel de proyección para iniciar.');
+          return;
+        }
         const res = await fetch('/api/parking/qr-entrada', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -426,21 +431,18 @@ function App() {
         });
         const data = await res.json();
         if (res.ok) {
-          // Si se usó el QR general, el backend devuelve la plaza auto-asignada
-          const plazaAsignada = data.identificador_plaza || plazaId;
-          setSelectedParkingSlot(plazaAsignada);
-          setParkingStatusMsg(`Paso 1 Completado: Auto ingresado en la plaza ${plazaAsignada}. Cobro inicial de ${tarifaParking} MO realizado.`);
+          setParkingStatusMsg('Acceso autorizado. Dirígete a cualquier plaza libre y escanea el QR físico de tu espacio.');
           setQrStep(2);
-          fetchParking();
-          fetchSession();
         } else {
-          alert("Error: " + data.error);
+          alert('Error: ' + data.error);
         }
       } else if (qrStep === 2) {
-        if (plazaId !== selectedParkingSlot) {
-          alert(`Plaza incorrecta. Escaneó ${plazaId} pero su auto está registrado en la plaza ${selectedParkingSlot}.`);
+        // Rechaza si alguien intenta escanear el QR de entrada de nuevo
+        if (plazaId === 'ACCESO_ENTRADA') {
+          alert('Ya iniciaste el acceso. Escanea el QR físico de la plaza que deseas ocupar.');
           return;
         }
+        // El QR escaneado es la plaza elegida: aquí se registra y cobra
         const res = await fetch('/api/parking/qr-plaza', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -448,15 +450,18 @@ function App() {
         });
         const data = await res.json();
         if (res.ok) {
-          setParkingStatusMsg(`Paso 2 Completado: ${data.message} Listo para cuando decida salir.`);
+          setSelectedParkingSlot(plazaId);
+          setParkingStatusMsg(`Plaza ${plazaId} registrada. Cobro de ${tarifaParking} MO realizado. Listo para cuando decidas salir.`);
           setQrStep(3);
+          fetchParking();
+          fetchSession();
         } else {
-          alert("Error: " + data.error);
+          alert('Error: ' + data.error);
         }
       } else if (qrStep === 3) {
-        const plazaToRelease = (plazaId === "ACCESO_SALIDA") ? selectedParkingSlot : plazaId;
+        const plazaToRelease = (plazaId === 'ACCESO_SALIDA') ? selectedParkingSlot : plazaId;
         if (plazaToRelease !== selectedParkingSlot) {
-          alert(`Plaza incorrecta para salida. Su auto está registrado en la plaza ${selectedParkingSlot}.`);
+          alert(`Plaza incorrecta para salida. Tu auto está registrado en la plaza ${selectedParkingSlot}.`);
           return;
         }
         const res = await fetch('/api/parking/qr-salida', {
@@ -466,13 +471,13 @@ function App() {
         });
         const data = await res.json();
         if (res.ok) {
-          setParkingStatusMsg(`Paso 3 Completado: Salida autorizada. Plaza liberada con éxito.`);
+          setParkingStatusMsg('Salida autorizada. Plaza liberada con éxito.');
           setQrStep(1);
-          setSelectedParkingSlot("");
+          setSelectedParkingSlot('');
           setMyOcupation(null);
           fetchParking();
         } else {
-          alert("Error: " + data.error);
+          alert('Error: ' + data.error);
         }
       }
     } catch (e) {
