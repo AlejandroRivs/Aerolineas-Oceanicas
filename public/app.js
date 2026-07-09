@@ -47,6 +47,10 @@ function App() {
   const [comentarioNormal, setComentarioNormal] = useState("");
   const [activeTicketForEscalation, setActiveTicketForEscalation] = useState("");
   const [activeTicketForComment, setActiveTicketForComment] = useState("");
+  const [activeTicketForCompensacion, setActiveTicketForCompensacion] = useState("");
+  const [compensarCantidad, setCompensarCantidad] = useState("");
+  const [compensarJustificacion, setCompensarJustificacion] = useState("");
+  const [adminUsuarios, setAdminUsuarios] = useState([]);
 
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -109,6 +113,9 @@ function App() {
         setUser(data.user);
         // Cargar reservas tras cargar la sesión del usuario
         fetchReservasUsuario();
+        if (data.user.rol === 'Administrador') {
+          fetchAdminUsuarios();
+        }
       }
     } catch (e) {
       console.error(e);
@@ -146,6 +153,45 @@ function App() {
       setIncidencias(data);
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const fetchAdminUsuarios = async () => {
+    try {
+      const res = await fetch('/api/admin/usuarios');
+      if (res.ok) {
+        const data = await res.json();
+        setAdminUsuarios(data.usuarios);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleTransferirMonedas = async (e, usuarioId) => {
+    e.preventDefault();
+    if (!compensarCantidad || !compensarJustificacion) return;
+    try {
+      const res = await fetch('/api/admin/transferir-monedas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usuarioId, cantidad: compensarCantidad, justificacion: compensarJustificacion })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Transferencia exitosa. Nuevo saldo en bóveda: " + data.nuevoSaldoAdmin + " MO");
+        // Refrescar sesión local para actualizar bóveda
+        fetchSession();
+        // Reset inputs
+        setCompensarCantidad("");
+        setCompensarJustificacion("");
+        setActiveTicketForCompensacion("");
+      } else {
+        alert(data.error);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error en la transferencia");
     }
   };
 
@@ -723,16 +769,16 @@ function App() {
         <div className="flex items-center space-x-4">
           {user ? (
             <div className="flex items-center space-x-4">
-              <div className="text-right hidden sm:block">
-                <span className="font-bold text-sm block text-white">{user.nombre}</span>
-                <div className="flex items-center justify-end space-x-2">
-                  <span className="px-2 py-0.5 rounded-full bg-blue-950 text-blue-200 text-[10px] font-bold border border-blue-800">
-                    {user.rol}
-                  </span>
+              <div className="flex flex-col text-right">
+                <span className="font-bold text-sm text-white">{user.nombre}</span>
+                {user.rol !== 'Servicio al Cliente' && user.rol !== 'Gerente' && (
                   <span className="font-bold text-xs text-emerald-400">
                     Saldo: {parseFloat(user.saldo).toLocaleString()} MO
                   </span>
-                </div>
+                )}
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                  {user.rol}
+                </span>
               </div>
               <div className="w-10 h-10 rounded-xl border border-blue-850 bg-blue-950/50 flex items-center justify-center shadow-sm">
                  <i data-lucide="user" className="w-5 h-5 text-blue-200"></i>
@@ -1246,8 +1292,44 @@ function App() {
                                     </button>
                                   </div>
                                 </form>
+                              ) : activeTicketForCompensacion === ticket.ticket_codigo ? (
+                                <form onSubmit={(e) => handleTransferirMonedas(e, ticket.cliente_id)} className="space-y-2 bg-emerald-50 p-3 rounded-xl border border-emerald-200 mt-2">
+                                  <p className="text-[10px] font-bold text-emerald-800 mb-1">Transferir Monedas a Cliente desde la Bóveda</p>
+                                  <div className="flex space-x-2">
+                                    <input 
+                                      type="number" 
+                                      placeholder="Cantidad"
+                                      min="1"
+                                      value={compensarCantidad}
+                                      onChange={e => setCompensarCantidad(e.target.value)}
+                                      className="w-1/3 bg-white border border-emerald-200 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none"
+                                    />
+                                    <input 
+                                      type="text" 
+                                      placeholder="Justificación..." 
+                                      value={compensarJustificacion}
+                                      onChange={e => setCompensarJustificacion(e.target.value)}
+                                      className="w-2/3 bg-white border border-emerald-200 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none"
+                                    />
+                                  </div>
+                                  <div className="flex justify-end space-x-2">
+                                    <button 
+                                      type="button" 
+                                      onClick={() => setActiveTicketForCompensacion("")}
+                                      className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-bold"
+                                    >
+                                      Cancelar
+                                    </button>
+                                    <button 
+                                      type="submit" 
+                                      className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-bold shadow hover:bg-emerald-700"
+                                    >
+                                      Abonar MO
+                                    </button>
+                                  </div>
+                                </form>
                               ) : (
-                                <div className="flex space-x-2">
+                                <div className="flex flex-wrap gap-2">
                                   <button 
                                     onClick={() => setActiveTicketForComment(ticket.ticket_codigo)}
                                     className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-xl text-[10px] transition shadow-sm"
@@ -1255,6 +1337,18 @@ function App() {
                                     Responder
                                   </button>
                                   
+                                  {user && user.rol === 'Administrador' && (
+                                    <button 
+                                      onClick={() => {
+                                        setActiveTicketForCompensacion(ticket.ticket_codigo);
+                                        setCompensarJustificacion("Compensación por ticket " + ticket.ticket_codigo);
+                                      }}
+                                      className="px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold rounded-xl text-[10px] transition shadow-sm border border-emerald-200"
+                                    >
+                                      Compensar Usuario (MO)
+                                    </button>
+                                  )}
+
                                   {canEscalate && (
                                     <>
                                       {activeTicketForEscalation === ticket.ticket_codigo ? (
@@ -1355,6 +1449,83 @@ function App() {
                         <option value="Administrador">Administrador</option>
                       </select>
                     </div>
+
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-white border border-slate-200 rounded-xl gap-4 shadow-sm">
+                      <div>
+                        <span className="font-bold text-xs block text-slate-800">Marta Gerente</span>
+                        <span className="text-[10px] text-slate-400">gerente@oceanica.com</span>
+                      </div>
+                      <select 
+                        onChange={(e) => handleCambiarRol(3, e.target.value)}
+                        className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-900 focus:outline-none"
+                        defaultValue="Gerente"
+                      >
+                        <option value="Cliente">Cliente</option>
+                        <option value="Servicio al Cliente">Servicio al Cliente</option>
+                        <option value="Gerente">Gerente</option>
+                        <option value="Administrador">Administrador</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bóveda Central y Gestión de Usuarios */}
+                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-sm font-bold text-slate-800">Bóveda Central y Gestión de Usuarios</h3>
+                    <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold border border-emerald-200 shadow-sm">
+                      Fondos en Bóveda: {parseFloat(user.saldo).toLocaleString()} MO
+                    </span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-600">
+                      <thead className="text-[10px] uppercase bg-slate-200 text-slate-700">
+                        <tr>
+                          <th className="px-4 py-2 rounded-tl-lg">ID</th>
+                          <th className="px-4 py-2">Usuario</th>
+                          <th className="px-4 py-2">Rol</th>
+                          <th className="px-4 py-2">Saldo Actual</th>
+                          <th className="px-4 py-2 rounded-tr-lg">Acción (Abonar MO)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {adminUsuarios.map(u => (
+                          <tr key={u.id} className="border-b border-slate-200 bg-white">
+                            <td className="px-4 py-3 font-bold text-slate-800">{u.id}</td>
+                            <td className="px-4 py-3">
+                              <div className="font-bold text-slate-800">{u.nombre}</div>
+                              <div className="text-[10px] text-slate-400">{u.email}</div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="px-2 py-0.5 rounded-full border text-[10px] font-bold bg-slate-100 text-slate-600 border-slate-300">
+                                {u.rol}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 font-bold text-emerald-600">{parseFloat(u.saldo_monedas).toLocaleString()} MO</td>
+                            <td className="px-4 py-3">
+                              <form onSubmit={(e) => handleTransferirMonedas(e, u.id)} className="flex items-center space-x-2">
+                                <input 
+                                  type="number"
+                                  min="1"
+                                  placeholder="Cant."
+                                  className="w-16 bg-slate-50 border border-slate-300 rounded px-2 py-1 text-xs focus:outline-none"
+                                  onChange={e => { setCompensarCantidad(e.target.value); setActiveTicketForCompensacion(u.id); }}
+                                />
+                                <input 
+                                  type="text"
+                                  placeholder="Justificación"
+                                  className="flex-1 w-24 sm:w-auto bg-slate-50 border border-slate-300 rounded px-2 py-1 text-xs focus:outline-none"
+                                  onChange={e => setCompensarJustificacion(e.target.value)}
+                                />
+                                <button type="submit" onClick={() => setActiveTicketForCompensacion(u.id)} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2 py-1 rounded text-[10px] shadow">
+                                  Enviar
+                                </button>
+                              </form>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
 

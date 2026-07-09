@@ -3,11 +3,10 @@ const { MongoClient } = require('mongodb');
 
 // Estado en memoria para el Fallback Mock DB
 const mockDb = {
-  usuarios: [
     { id: 1, google_id: 'mock_google_id_1', email: 'cliente@oceanica.com', nombre: 'Juan Pérez (Mock)', avatar: null, saldo_monedas: 5000.00, rol: 'Cliente', ciudadesVisitadas: ['Santiago'] },
-    { id: 2, google_id: 'mock_google_id_2', email: 'servicio@oceanica.com', nombre: 'Carlos Agente (Mock)', avatar: null, saldo_monedas: 5000.00, rol: 'Servicio al Cliente', ciudadesVisitadas: [] },
-    { id: 3, google_id: 'mock_google_id_3', email: 'gerente@oceanica.com', nombre: 'Marta Gerente (Mock)', avatar: null, saldo_monedas: 5000.00, rol: 'Gerente', ciudadesVisitadas: [] },
-    { id: 4, google_id: 'mock_google_id_4', email: 'admin@oceanica.com', nombre: 'Alex Admin (Mock)', avatar: null, saldo_monedas: 100000.00, rol: 'Administrador', ciudadesVisitadas: [] }
+    { id: 2, google_id: 'mock_google_id_2', email: 'servicio@oceanica.com', nombre: 'Carlos Agente (Mock)', avatar: null, saldo_monedas: 0.00, rol: 'Servicio al Cliente', ciudadesVisitadas: [] },
+    { id: 3, google_id: 'mock_google_id_3', email: 'gerente@oceanica.com', nombre: 'Marta Gerente (Mock)', avatar: null, saldo_monedas: 0.00, rol: 'Gerente', ciudadesVisitadas: [] },
+    { id: 4, google_id: 'mock_google_id_4', email: 'admin@oceanica.com', nombre: 'Alex Admin (Mock)', avatar: null, saldo_monedas: 50000.00, rol: 'Administrador', ciudadesVisitadas: [] }
   ],
   credenciales: [
     { id: 1, email: 'cliente@oceanica.com', password: 'cliente123', google_id: 'mock_google_id_1' },
@@ -2395,9 +2394,17 @@ const db = {
 
   async actualizarRol(usuarioId, nuevoRol) {
     if (useMock) {
-      const user = mockDb.usuarios.find(u => u.id === Number(usuarioId));
-      if (user) user.rol = nuevoRol;
-      return user;
+      const u = mockDb.usuarios.find(u => u.id === Number(usuarioId));
+      if (u) {
+        u.rol = nuevoRol;
+        if (nuevoRol === 'Servicio al Cliente' || nuevoRol === 'Gerente') {
+          u.saldo_monedas = 0;
+        } else if (nuevoRol === 'Administrador') {
+          u.saldo_monedas = 50000;
+        }
+        return u;
+      }
+      throw new Error('Usuario no encontrado');
     }
     const { data, error } = await supabase
       .from('usuarios')
@@ -2407,6 +2414,84 @@ const db = {
       .single();
     if (error) throw error;
     return data;
+  },
+
+  async getUsuariosAdmin() {
+    if (useMock) {
+      return mockDb.usuarios.map(u => ({
+        id: u.id,
+        nombre: u.nombre,
+        email: u.email,
+        rol: u.rol,
+        saldo_monedas: u.saldo_monedas
+      }));
+    }
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('id, nombre, email, rol, saldo_monedas');
+    if (error) throw error;
+    return data;
+  },
+
+  async transferirMonedas(adminId, userId, cantidad, justificacion) {
+    if (cantidad <= 0) throw new Error('La cantidad debe ser mayor a 0');
+
+    if (useMock) {
+      const admin = mockDb.usuarios.find(u => u.id === Number(adminId));
+      const user = mockDb.usuarios.find(u => u.id === Number(userId));
+
+      if (!admin || admin.rol !== 'Administrador') throw new Error('No autorizado');
+      if (!user) throw new Error('Usuario destinatario no encontrado');
+      if (admin.saldo_monedas < cantidad) throw new Error('El administrador no tiene fondos suficientes en la bóveda');
+
+      admin.saldo_monedas -= cantidad;
+      user.saldo_monedas += cantidad;
+
+      mockDb.transacciones.push({
+        id: mockDb.transacciones.length + 1,
+        usuario_id: admin.id,
+        tipo: 'Egreso Bóveda',
+        monto: -cantidad,
+        descripcion: `Transferencia a usuario ID ${userId}: ${justificacion}`,
+        fecha_transaccion: new Date().toISOString()
+      });
+
+      mockDb.transacciones.push({
+        id: mockDb.transacciones.length + 1,
+        usuario_id: user.id,
+        tipo: 'Ingreso Bóveda',
+        monto: cantidad,
+        descripcion: `Compensación/Transferencia del Administrador: ${justificacion}`,
+        fecha_transaccion: new Date().toISOString()
+      });
+
+      return { success: true, nuevoSaldoAdmin: admin.saldo_monedas };
+    }
+
+    // Supabase logic
+    const { data: admin, error: adminErr } = await supabase.from('usuarios').select('saldo_monedas, rol').eq('id', adminId).single();
+    if (adminErr || !admin || admin.rol !== 'Administrador') throw new Error('No autorizado');
+    
+    if (parseFloat(admin.saldo_monedas) < cantidad) throw new Error('Fondos insuficientes en la bóveda del administrador');
+
+    const { data: user, error: userErr } = await supabase.from('usuarios').select('saldo_monedas').eq('id', userId).single();
+    if (userErr || !user) throw new Error('Usuario destinatario no encontrado');
+
+    const nuevoSaldoAdmin = parseFloat(admin.saldo_monedas) - cantidad;
+    const nuevoSaldoUser = parseFloat(user.saldo_monedas) + cantidad;
+
+    const { error: updateAdminErr } = await supabase.from('usuarios').update({ saldo_monedas: nuevoSaldoAdmin }).eq('id', adminId);
+    if (updateAdminErr) throw updateAdminErr;
+    
+    const { error: updateUserErr } = await supabase.from('usuarios').update({ saldo_monedas: nuevoSaldoUser }).eq('id', userId);
+    if (updateUserErr) throw updateUserErr;
+
+    await supabase.from('transacciones').insert([
+      { usuario_id: adminId, tipo: 'Egreso Bóveda', monto: -cantidad, descripcion: `Transferencia a usuario ID ${userId}: ${justificacion}` },
+      { usuario_id: userId, tipo: 'Ingreso Bóveda', monto: cantidad, descripcion: `Compensación/Transferencia del Administrador: ${justificacion}` }
+    ]);
+
+    return { success: true, nuevoSaldoAdmin };
   },
 
   // --- VUELOS ---

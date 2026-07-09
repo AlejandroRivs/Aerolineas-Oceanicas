@@ -667,6 +667,52 @@ router.post('/api/usuarios/rol', async (ctx) => {
   ctx.body = { success: true, usuario: updatedUser };
 });
 
+// Obtener todos los usuarios (Solo Administrador)
+router.get('/api/admin/usuarios', async (ctx) => {
+  const user = ctx.session.user;
+  if (!user || user.rol !== 'Administrador') {
+    ctx.status = 403;
+    ctx.body = { error: 'Acceso denegado. Solo administradores.' };
+    return;
+  }
+  try {
+    const usuarios = await db.getUsuariosAdmin();
+    ctx.body = { success: true, usuarios };
+  } catch (error) {
+    ctx.status = 500;
+    ctx.body = { error: error.message };
+  }
+});
+
+// Transferir monedas a un usuario (Solo Administrador)
+router.post('/api/admin/transferir-monedas', async (ctx) => {
+  const user = ctx.session.user;
+  if (!user || user.rol !== 'Administrador') {
+    ctx.status = 403;
+    ctx.body = { error: 'Acceso denegado. Solo administradores pueden usar la bóveda.' };
+    return;
+  }
+
+  const { usuarioId, cantidad, justificacion } = ctx.request.body;
+  if (!usuarioId || !cantidad || !justificacion) {
+    ctx.status = 400;
+    ctx.body = { error: 'Faltan parámetros requeridos.' };
+    return;
+  }
+
+  try {
+    const res = await db.transferirMonedas(user.id, usuarioId, parseFloat(cantidad), justificacion);
+    // Actualizar el saldo del admin en la sesión actual
+    if (ctx.session.user) {
+      ctx.session.user.saldo = res.nuevoSaldoAdmin;
+    }
+    ctx.body = { success: true, message: 'Transferencia exitosa', nuevoSaldoAdmin: res.nuevoSaldoAdmin };
+  } catch (error) {
+    ctx.status = 400;
+    ctx.body = { error: error.message };
+  }
+});
+
 app.use(router.routes()).use(router.allowedMethods());
 
 // Servir archivos estáticos del frontend
