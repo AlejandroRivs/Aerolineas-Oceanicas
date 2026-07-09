@@ -338,8 +338,24 @@
     }
 
     async function resetDemonstration() {
-      try { await fetch('/api/parking/reset', { method: 'POST' }); } catch (e) {}
-      applyEstados([]);
+      const btn = document.querySelector('.btn-reset');
+      btn.textContent = 'Reiniciando...';
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/parking/reset', { method: 'POST' });
+        if (res.ok) {
+          applyEstados([]);
+          btn.textContent = 'Reiniciar Demostración';
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert('Error al reiniciar: ' + (err.error || res.status));
+          btn.textContent = 'Reiniciar Demostración';
+        }
+      } catch (e) {
+        alert('No se pudo conectar con el servidor para reiniciar.');
+        btn.textContent = 'Reiniciar Demostración';
+      }
+      btn.disabled = false;
     }
 
     renderInitial();

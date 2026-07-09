@@ -131,11 +131,6 @@ function App() {
       const data = await res.json();
       setParkingSlots(data.slots || []);
       setTarifaParking(data.tarifa || 20);
-      
-      if (user) {
-        const mySlot = (data.slots || []).find(s => s.usuario_id === user.id && s.estado === 'Ocupado');
-        setMyOcupation(mySlot || null);
-      }
     } catch (e) {
       console.error(e);
     }
@@ -151,10 +146,21 @@ function App() {
     }
   };
 
+  // Restaurar el estado de parking desde el backend al cargar la página (fix recarga)
   useEffect(() => {
-    if (user) {
+    if (user && parkingSlots.length > 0) {
       const mySlot = parkingSlots.find(s => s.usuario_id === user.id && s.estado === 'Ocupado');
-      setMyOcupation(mySlot || null);
+      if (mySlot) {
+        setMyOcupation(mySlot);
+        setSelectedParkingSlot(mySlot.identificador_plaza);
+        // Si ya tiene plaza ocupada y el paso es 1 (recarga), ir al paso 3 directamente
+        setQrStep(prev => prev === 1 ? 3 : prev);
+        setParkingStatusMsg(`Plaza ${mySlot.identificador_plaza} activa. Escanea el QR de salida para liberar tu espacio.`);
+      } else {
+        setMyOcupation(null);
+        // Solo resetear si no está en medio de un flujo activo
+        setQrStep(prev => prev === 3 && !mySlot ? 1 : prev);
+      }
     }
   }, [user, parkingSlots]);
 
@@ -939,17 +945,24 @@ function App() {
                     ) : (
                       <div className="space-y-4">
                         {qrStep === 1 && (
-                          <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center space-y-1">
-                            <p className="text-xs text-slate-500 font-semibold">Paso 1: Entrada al Parking</p>
-                            <p className="text-[10px] text-slate-400 leading-normal">Escanee el código QR de entrada de la plaza que desea reservar.</p>
+                          <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl text-center space-y-1">
+                            <p className="text-xs text-blue-600 font-bold uppercase tracking-wider">Paso 1: Entrada al Parking</p>
+                            <p className="text-[10px] text-slate-400 leading-normal">Escanea el QR de entrada en el panel de proyección. El sistema te asignará una plaza automáticamente.</p>
                           </div>
                         )}
 
                         {qrStep === 2 && (
-                          <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center space-y-1">
-                            <p className="text-xs text-slate-500 font-semibold">Paso 2: Confirmación en Plaza</p>
-                            <p className="text-sm font-bold text-[#162b4e]">Plaza Asignada: {selectedParkingSlot}</p>
-                            <p className="text-[10px] text-slate-400 leading-normal">Escanee el código QR físico en el pilar de su plaza.</p>
+                          <div className="bg-emerald-50 border-2 border-emerald-400 p-4 rounded-xl text-center space-y-3">
+                            <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider">Paso 2: Dirígete a tu Plaza</p>
+                            <div className="bg-white border-2 border-emerald-500 rounded-2xl p-3 inline-block shadow-md">
+                              <p className="text-2xl font-black text-[#162b4e] tracking-widest">{selectedParkingSlot}</p>
+                              <img
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=120&data=${encodeURIComponent(selectedParkingSlot)}`}
+                                alt={`QR ${selectedParkingSlot}`}
+                                className="w-24 h-24 mx-auto mt-2"
+                              />
+                            </div>
+                            <p className="text-[10px] text-emerald-700 font-semibold leading-normal">Ve al pilar de esta plaza y escanea el QR físico que está marcado con este mismo código.</p>
                           </div>
                         )}
 
@@ -957,7 +970,7 @@ function App() {
                           <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center space-y-1">
                             <p className="text-xs text-slate-500 font-semibold">Paso 3: Salida del Parking</p>
                             <p className="text-sm font-bold text-[#162b4e]">Plaza a Liberar: {selectedParkingSlot}</p>
-                            <p className="text-[10px] text-slate-400 leading-normal">Escanee el código QR de la barrera de salida para liberar la plaza.</p>
+                            <p className="text-[10px] text-slate-400 leading-normal">Escanea el código QR de la barrera de salida para liberar la plaza.</p>
                           </div>
                         )}
 
