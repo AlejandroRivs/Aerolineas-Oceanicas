@@ -2677,7 +2677,7 @@ const db = {
       slot.usuario_id = null;
       slot.fecha_entrada = null;
       slot.ultimo_cargo = null;
-      return { success: true, message: 'Salida exitosa y plaza liberada.' };
+      return { success: true, message: '¡Gracias por su visita! Salida exitosa y plaza liberada. Esperamos verlos pronto.' };
     }
     const { data, error } = await supabase
       .from('parking_slots')
@@ -2694,7 +2694,7 @@ const db = {
     if (error || !data) {
       throw new Error('No se pudo validar la salida o el usuario no está al día.');
     }
-    return { success: true, message: 'Salida exitosa y plaza liberada.' };
+    return { success: true, message: '¡Gracias por su visita! Salida exitosa y plaza liberada. Esperamos verlos pronto.' };
   },
 
   async resetAllParking() {
