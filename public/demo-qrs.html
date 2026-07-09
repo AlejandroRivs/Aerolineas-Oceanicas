@@ -193,6 +193,17 @@
     .exit-desc .tag { font-size: 10px; font-weight: 800; color: #f87171; text-transform: uppercase; letter-spacing: 0.12em; }
     .exit-desc h3 { font-size: 15px; font-weight: 900; color: white; margin: 5px 0; }
     .exit-desc p { font-size: 11px; color: #64748b; line-height: 1.5; }
+
+    /* Zoom 150% en los QRs al pasar el ratón */
+    .entry-qr-img-box img, .qr-box img, .exit-qr-box img {
+      transition: transform 0.3s ease, opacity 0.3s !important;
+      cursor: zoom-in;
+    }
+    .entry-qr-img-box img:hover, .qr-box img:hover, .exit-qr-box img:hover {
+      transform: scale(1.5);
+      position: relative;
+      z-index: 99;
+    }
   </style>
 </head>
 <body>
