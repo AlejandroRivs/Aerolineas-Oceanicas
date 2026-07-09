@@ -600,8 +600,8 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
         {/* PANEL CENTRAL: MAPA INTERACTIVO SVG O RESULTADOS GENERALES */}
         {searchTab === 'inteligente' ? (
           <div className="p-6 lg:col-span-2 flex flex-col justify-between bg-[#162b4e]/5 relative border-l border-slate-100 min-h-[450px]">
-            <div className="w-full flex justify-between items-center mb-6 pt-2 pb-4 border-b border-slate-200">
-              <div className="flex items-center space-x-2">
+            <div className="w-full grid grid-cols-1 md:grid-cols-3 items-center gap-4 mb-6 pt-2 pb-4 border-b border-slate-200">
+              <div className="flex items-center space-x-2 justify-start">
                 <span className="text-xs font-bold bg-[#162b4e] text-white px-3 py-1.5 rounded-full uppercase tracking-widest shadow-sm">
                   Mapa de América Latina
                 </span>
@@ -614,17 +614,19 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
                   </button>
                 )}
               </div>
-              <div className="flex items-center space-x-3 text-right col-span-2 text-right">
-                <span className="text-xs md:text-sm font-extrabold text-[#162b4e] uppercase tracking-wider">
-                  Destino: <span className="text-blue-600 text-sm md:text-base font-black transition-all">{paisHover || (paisSeleccionado ? paisSeleccionado.toUpperCase() : "Pasa el cursor")}</span>
+              <div className="flex justify-center text-center">
+                <span className="text-sm font-extrabold text-[#162b4e] uppercase tracking-wider">
+                  Destino: <span className="text-blue-600 text-base md:text-xl font-black transition-all block md:inline mt-0.5 md:mt-0">{paisHover || (paisSeleccionado ? paisSeleccionado.toUpperCase() : "Pasa el cursor")}</span>
                 </span>
-                <span className="text-[11px] text-blue-600 font-extrabold tracking-wide bg-blue-50 px-2 py-0.5 rounded">
+              </div>
+              <div className="flex items-center justify-end pr-6">
+                <span className="text-[11px] text-blue-600 font-extrabold tracking-wide bg-blue-50 px-2.5 py-1 rounded shadow-sm">
                   Escala: {(zoom * 100).toFixed(0)}%
                 </span>
               </div>
             </div>
             
-            <div className="relative w-full h-96 flex items-center justify-center my-auto pt-6 overflow-hidden bg-[#c5daeb] rounded-3xl border border-[#b0cde3] shadow-inner">
+            <div className="relative w-full h-[480px] flex items-center justify-center my-auto pt-6 overflow-hidden bg-[#c5daeb] rounded-3xl border border-[#b0cde3] shadow-inner">
               {/* BOTONES FLOTANTES DE ZOOM */}
               <div className="absolute bottom-4 right-4 z-20 flex flex-col space-y-1.5 bg-white/90 backdrop-blur-sm p-1.5 rounded-xl border border-gray-200 shadow-md">
                 <button 
