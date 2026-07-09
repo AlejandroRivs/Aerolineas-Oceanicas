@@ -174,9 +174,9 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
     vuelosIdaCandidates.forEach(ida => {
       vuelosVueltaCandidates.forEach(vuelta => {
         const origenVueltaLimpio = vuelta.origen.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const destinoIdaLimpio = ida.destino_ciudad.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const destinoPaisIdaLimpio = ida.destino_pais.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         
-        if (origenVueltaLimpio.includes(destinoIdaLimpio)) {
+        if (origenVueltaLimpio.includes(destinoPaisIdaLimpio)) {
           const fechaIda = new Date(ida.fecha_salida);
           const fechaVuelta = new Date(vuelta.fecha_salida);
           const diffMs = fechaVuelta.getTime() - fechaIda.getTime();

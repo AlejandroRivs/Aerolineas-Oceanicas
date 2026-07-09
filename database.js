@@ -1147,7 +1147,7 @@ const mockDb = {
   {
     "id": 2001,
     "codigo_vuelo": "OC-2001",
-    "origen": "Cancún, MX",
+    "origen": "México",
     "destino_pais": "México",
     "destino_ciudad": "México",
     "fecha_salida": "2026-07-11T12:00:00.000Z",
@@ -1159,7 +1159,7 @@ const mockDb = {
   {
     "id": 2002,
     "codigo_vuelo": "OC-2002",
-    "origen": "Cusco, PE",
+    "origen": "Perú",
     "destino_pais": "México",
     "destino_ciudad": "México",
     "fecha_salida": "2026-07-11T14:00:00.000Z",
@@ -1171,7 +1171,7 @@ const mockDb = {
   {
     "id": 2003,
     "codigo_vuelo": "OC-2003",
-    "origen": "San Pedro de Atacama, CL",
+    "origen": "Chile",
     "destino_pais": "México",
     "destino_ciudad": "México",
     "fecha_salida": "2026-07-11T15:30:00.000Z",
@@ -1183,7 +1183,7 @@ const mockDb = {
   {
     "id": 2004,
     "codigo_vuelo": "OC-2004",
-    "origen": "Bogotá, CO",
+    "origen": "Colombia",
     "destino_pais": "México",
     "destino_ciudad": "México",
     "fecha_salida": "2026-07-11T10:00:00.000Z",
@@ -1195,7 +1195,7 @@ const mockDb = {
   {
     "id": 2005,
     "codigo_vuelo": "OC-2005",
-    "origen": "Manaos, BR",
+    "origen": "Brasil",
     "destino_pais": "México",
     "destino_ciudad": "México",
     "fecha_salida": "2026-07-11T17:00:00.000Z",
@@ -1207,7 +1207,7 @@ const mockDb = {
   {
     "id": 2006,
     "codigo_vuelo": "OC-2006",
-    "origen": "Antigua Guatemala, GT",
+    "origen": "Guatemala",
     "destino_pais": "México",
     "destino_ciudad": "México",
     "fecha_salida": "2026-07-11T11:00:00.000Z",
@@ -1219,7 +1219,7 @@ const mockDb = {
   {
     "id": 2007,
     "codigo_vuelo": "OC-2007",
-    "origen": "Jacó, CR",
+    "origen": "Costa Rica",
     "destino_pais": "México",
     "destino_ciudad": "México",
     "fecha_salida": "2026-07-11T16:00:00.000Z",
@@ -1231,7 +1231,7 @@ const mockDb = {
   {
     "id": 2008,
     "codigo_vuelo": "OC-2008",
-    "origen": "Cusco, PE",
+    "origen": "Perú",
     "destino_pais": "México",
     "destino_ciudad": "México",
     "fecha_salida": "2026-07-10T14:00:00.000Z",
@@ -1243,7 +1243,7 @@ const mockDb = {
   {
     "id": 2009,
     "codigo_vuelo": "OC-2009",
-    "origen": "Cancún, MX",
+    "origen": "México",
     "destino_pais": "México",
     "destino_ciudad": "México",
     "fecha_salida": "2026-07-10T12:00:00.000Z",
@@ -1255,7 +1255,7 @@ const mockDb = {
   {
     "id": 2010,
     "codigo_vuelo": "OC-2010",
-    "origen": "Antigua Guatemala, GT",
+    "origen": "Guatemala",
     "destino_pais": "México",
     "destino_ciudad": "México",
     "fecha_salida": "2026-07-10T11:00:00.000Z",
@@ -1267,7 +1267,7 @@ const mockDb = {
   {
     "id": 3001,
     "codigo_vuelo": "OC-3001",
-    "origen": "Cancún, MX",
+    "origen": "México",
     "destino_pais": "Guatemala",
     "destino_ciudad": "Guatemala",
     "fecha_salida": "2026-07-11T12:00:00.000Z",
@@ -1279,7 +1279,7 @@ const mockDb = {
   {
     "id": 3002,
     "codigo_vuelo": "OC-3002",
-    "origen": "Cusco, PE",
+    "origen": "Perú",
     "destino_pais": "Guatemala",
     "destino_ciudad": "Guatemala",
     "fecha_salida": "2026-07-11T15:00:00.000Z",
@@ -1291,7 +1291,7 @@ const mockDb = {
   {
     "id": 3003,
     "codigo_vuelo": "OC-3003",
-    "origen": "Jacó, CR",
+    "origen": "Costa Rica",
     "destino_pais": "Guatemala",
     "destino_ciudad": "Guatemala",
     "fecha_salida": "2026-07-11T10:00:00.000Z",
@@ -1303,7 +1303,7 @@ const mockDb = {
   {
     "id": 4001,
     "codigo_vuelo": "OC-4001",
-    "origen": "Cancún, MX",
+    "origen": "México",
     "destino_pais": "Costa Rica",
     "destino_ciudad": "Costa Rica",
     "fecha_salida": "2026-07-11T09:00:00.000Z",
@@ -1315,7 +1315,7 @@ const mockDb = {
   {
     "id": 4002,
     "codigo_vuelo": "OC-4002",
-    "origen": "Cusco, PE",
+    "origen": "Perú",
     "destino_pais": "Costa Rica",
     "destino_ciudad": "Costa Rica",
     "fecha_salida": "2026-07-11T13:00:00.000Z",
