@@ -497,6 +497,17 @@ router.post('/api/parking/simulate-midnight', async (ctx) => {
   }
 });
 
+// Estado de plazas de parking (público para el panel de presentación)
+router.get('/api/parking/slots', async (ctx) => {
+  try {
+    const slots = await db.getParkingSlots();
+    ctx.body = { slots };
+  } catch (error) {
+    ctx.status = 500;
+    ctx.body = { error: 'Error al obtener las plazas de parking.' };
+  }
+});
+
 // Reinicio global de la demostración de parking
 router.post('/api/parking/reset', async (ctx) => {
   try {
