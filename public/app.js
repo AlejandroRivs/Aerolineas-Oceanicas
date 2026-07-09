@@ -952,22 +952,15 @@ function App() {
                         {qrStep === 1 && (
                           <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl text-center space-y-1">
                             <p className="text-xs text-blue-600 font-bold uppercase tracking-wider">Paso 1: Entrada al Parking</p>
-                            <p className="text-[10px] text-slate-400 leading-normal">Escanea el QR de entrada en el panel de proyección. El sistema te asignará una plaza automáticamente.</p>
+                            <p className="text-[10px] text-slate-400 leading-normal">Escanea el QR de entrada del panel de proyeccion para habilitar el acceso.</p>
                           </div>
                         )}
 
                         {qrStep === 2 && (
-                          <div className="bg-emerald-50 border-2 border-emerald-400 p-4 rounded-xl text-center space-y-3">
-                            <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider">Paso 2: Dirígete a tu Plaza</p>
-                            <div className="bg-white border-2 border-emerald-500 rounded-2xl p-3 inline-block shadow-md">
-                              <p className="text-2xl font-black text-[#162b4e] tracking-widest">{selectedParkingSlot}</p>
-                              <img
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=120&data=${encodeURIComponent(selectedParkingSlot)}`}
-                                alt={`QR ${selectedParkingSlot}`}
-                                className="w-24 h-24 mx-auto mt-2"
-                              />
-                            </div>
-                            <p className="text-[10px] text-emerald-700 font-semibold leading-normal">Ve al pilar de esta plaza y escanea el QR físico que está marcado con este mismo código.</p>
+                          <div className="bg-emerald-50 border-2 border-emerald-400 p-4 rounded-xl text-center space-y-2">
+                            <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider">Paso 2: Elige tu Plaza</p>
+                            <p className="text-sm font-bold text-[#162b4e]">Acceso Autorizado</p>
+                            <p className="text-[10px] text-emerald-700 font-semibold leading-normal">Dirígete a cualquier plaza disponible (verde) en el panel y escanea el QR físico de ese espacio. El cobro de {tarifaParking} MO se realizará al registrar tu plaza.</p>
                           </div>
                         )}
 
@@ -983,7 +976,7 @@ function App() {
                           onClick={startScanning}
                           className="w-full py-3 bg-[#162b4e] hover:bg-[#0f1f3a] text-white font-bold rounded-xl transition duration-150 shadow-md text-xs uppercase"
                         >
-                          {qrStep === 1 ? 'Iniciar Cámara - Entrada' : qrStep === 2 ? 'Iniciar Cámara - Confirmar Plaza' : 'Iniciar Cámara - Salida'}
+                          {qrStep === 1 ? 'Iniciar Cámara - Entrada' : qrStep === 2 ? 'Iniciar Cámara - Seleccionar Plaza' : 'Iniciar Cámara - Salida'}
                         </button>
 
 
