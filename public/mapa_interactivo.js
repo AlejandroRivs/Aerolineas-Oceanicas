@@ -11,8 +11,20 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
   const [vuelosFiltrados, setVuelosFiltrados] = useState([]);
   const [paisSeleccionado, setPaisSeleccionado] = useState(null);
   const [paisHover, setPaisHover] = useState(null);
-  const [soloNoVisitados, setSoloNoVisitados] = useState(false);
-  const [paisesVisitados, setPaisesVisitados] = useState(['Chile']);
+  const [soloNoVisitados, setSoloNoVisitados] = useState(() => {
+    try {
+      return localStorage.getItem('soloNoVisitados') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+  const [paisesVisitados, setPaisesVisitados] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('paisesVisitados') || '[]');
+    } catch (e) {
+      return [];
+    }
+  });
   const [modalPaisesOpen, setModalPaisesOpen] = useState(false);
 
   // Estados de Pestañas y Búsqueda General
@@ -28,6 +40,22 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
       setPresupuesto(userBalance);
     }
   }, [userBalance]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('paisesVisitados', JSON.stringify(paisesVisitados));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [paisesVisitados]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('soloNoVisitados', String(soloNoVisitados));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [soloNoVisitados]);
 
   // Estados y funciones para el control y medidor de zoom solicitado
   const [zoom, setZoom] = useState(1.25);
@@ -355,23 +383,25 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
                 <button 
                   onClick={() => setPresupuesto(p => Math.min(userBalance || 5000, p + 500))}
                   disabled={presupuesto >= (userBalance || 5000)}
-                  className="w-full py-2 bg-white hover:bg-slate-100 disabled:opacity-50 disabled:hover:bg-white text-[#162b4e] font-bold rounded-xl text-xs transition border border-slate-200 text-left px-4 flex justify-between"
+                  className="w-full py-2.5 bg-white hover:bg-slate-100 disabled:opacity-50 disabled:hover:bg-white text-[#162b4e] font-bold rounded-xl text-xs transition border border-slate-200 text-left px-4 flex justify-between items-center"
                 >
-                  <span>Aumentar presupuesto</span>
-                  <span className="text-emerald-600">+500 MO</span>
+                  <span className="font-semibold text-slate-600">Subir Presupuesto ({presupuesto} MO)</span>
+                  <span className="text-emerald-600 font-black">Nuevo: {Math.min(userBalance || 5000, presupuesto + 500)} MO</span>
                 </button>
                 <button 
                   onClick={() => setDiasDisponibles(d => d + 1)}
-                  className="w-full py-2 bg-white hover:bg-slate-100 text-[#162b4e] font-bold rounded-xl text-xs transition border border-slate-200 text-left px-4 flex justify-between"
+                  className="w-full py-2.5 bg-white hover:bg-slate-100 text-[#162b4e] font-bold rounded-xl text-xs transition border border-slate-200 text-left px-4 flex justify-between items-center"
                 >
-                  <span>Ampliar días de viaje</span>
-                  <span className="text-blue-600">+1 día</span>
+                  <span className="font-semibold text-slate-600">Ampliar Días ({diasDisponibles} días)</span>
+                  <span className="text-blue-600 font-black">Nuevo: {diasDisponibles + 1} días</span>
                 </button>
                 <button 
                   onClick={() => setGusto("Todos")}
-                  className="w-full py-2 bg-white hover:bg-slate-100 text-[#162b4e] font-bold rounded-xl text-xs transition border border-slate-200 text-left px-4"
+                  disabled={gusto === "Todos"}
+                  className="w-full py-2.5 bg-white hover:bg-slate-100 disabled:opacity-50 disabled:hover:bg-white text-[#162b4e] font-bold rounded-xl text-xs transition border border-slate-200 text-left px-4 flex justify-between items-center"
                 >
-                  Cambiar experiencia a "Cualquiera"
+                  <span className="font-semibold text-slate-600">Gusto actual ({gusto})</span>
+                  <span className="text-[#162b4e] font-black">Nuevo: Cualquiera</span>
                 </button>
               </div>
             </div>
@@ -519,7 +549,7 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
                       className="w-3.5 h-3.5 rounded border-blue-800 text-blue-600 focus:ring-blue-500 bg-blue-950"
                     />
                     <label htmlFor="soloNoVisitadosMap" className="text-[10px] font-bold text-gray-300 cursor-pointer select-none">
-                      Destinos no visitados
+                      Filtrar países visitados
                     </label>
                   </div>
                   {soloNoVisitados && (
@@ -531,6 +561,17 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
                       Editar
                     </button>
                   )}
+                </div>
+
+                {/* Botón ¡Sorpréndeme! */}
+                <div className="pt-4 border-t border-blue-900/50 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setPaisSeleccionado('Sorpréndeme')}
+                    className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition-all shadow-md transform hover:scale-[1.02]"
+                  >
+                    ¡Sorprendeme?
+                  </button>
                 </div>
               </div>
             ) : (
@@ -731,12 +772,23 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
                       ✕
                     </button>
                     <div className="mb-4 border-b border-slate-100 pb-4">
-                      <span className="text-[10px] font-black text-blue-600 tracking-widest uppercase block mb-1">Destino Seleccionado</span>
+                      <span className="text-[10px] font-black text-blue-600 tracking-widest uppercase block mb-1">
+                        {paisSeleccionado === 'Sorpréndeme' ? 'Recomendaciones recomendadas' : 'Destino Seleccionado'}
+                      </span>
                       <h3 className="text-2xl font-black text-[#162b4e]">{paisSeleccionado.toUpperCase()}</h3>
-                      <p className="text-sm text-slate-500 mt-1">{vuelosFiltrados.filter(v => v.pais_destino === paisSeleccionado).length} vuelos disponibles con tus filtros.</p>
+                      <p className="text-sm text-slate-500 mt-1">
+                        {paisSeleccionado === 'Sorpréndeme' 
+                          ? `${vuelosFiltrados.length} paquetes disponibles con tus filtros de búsqueda.`
+                          : `${vuelosFiltrados.filter(v => v.pais_destino === paisSeleccionado).length} vuelos disponibles con tus filtros.`}
+                      </p>
                     </div>
                     <div className="flex-1 overflow-hidden">
-                      {renderVuelosCards(vuelosFiltrados.filter(v => v.pais_destino === paisSeleccionado), true)}
+                      {renderVuelosCards(
+                        paisSeleccionado === 'Sorpréndeme' 
+                          ? vuelosFiltrados 
+                          : vuelosFiltrados.filter(v => v.pais_destino === paisSeleccionado), 
+                        true
+                      )}
                     </div>
                   </div>
                 </div>
