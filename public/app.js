@@ -41,9 +41,12 @@ function App() {
   // Estados de Incidencias
   const [incidencias, setIncidencias] = useState([]);
   const [nuevaIncidenciaText, setNuevaIncidenciaText] = useState("");
+  const [nuevaIncidenciaCategoria, setNuevaIncidenciaCategoria] = useState("");
   const [incidenciaMsg, setIncidenciaMsg] = useState("");
   const [escalarComentario, setEscalarComentario] = useState("");
+  const [comentarioNormal, setComentarioNormal] = useState("");
   const [activeTicketForEscalation, setActiveTicketForEscalation] = useState("");
+  const [activeTicketForComment, setActiveTicketForComment] = useState("");
 
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -525,17 +528,54 @@ function App() {
   // Crear reporte de soporte
   const handleCrearIncidencia = async (e) => {
     e.preventDefault();
-    if (!nuevaIncidenciaText.trim()) return;
+    if (!nuevaIncidenciaText.trim() || !nuevaIncidenciaCategoria) return;
     try {
       const res = await fetch('/api/incidencias/crear', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ descripcion: nuevaIncidenciaText })
+        body: JSON.stringify({ descripcion: nuevaIncidenciaText, categoria: nuevaIncidenciaCategoria })
       });
       const data = await res.json();
       if (res.ok) {
         setNuevaIncidenciaText("");
+        setNuevaIncidenciaCategoria("");
         setIncidenciaMsg("Caso reportado con éxito.");
+        fetchIncidencias();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Comentar caso
+  const handleComentarIncidencia = async (e, ticketCodigo) => {
+    e.preventDefault();
+    if (!comentarioNormal.trim()) return;
+    try {
+      const res = await fetch('/api/incidencias/comentar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticketCodigo, comentario: comentarioNormal })
+      });
+      if (res.ok) {
+        setComentarioNormal("");
+        setActiveTicketForComment("");
+        fetchIncidencias();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Cerrar caso
+  const handleCerrarIncidencia = async (ticketCodigo) => {
+    try {
+      const res = await fetch('/api/incidencias/cerrar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticketCodigo })
+      });
+      if (res.ok) {
         fetchIncidencias();
       }
     } catch (e) {
@@ -755,7 +795,7 @@ function App() {
               }`}
             >
               <i data-lucide="ticket" className={`w-4 h-4 ${activeTab === "incidencias" ? "text-[#162b4e]" : "text-white"}`}></i>
-              <span>Soporte / Escalación</span>
+              <span>Soporte</span>
             </button>
 
             {user && (
@@ -1047,26 +1087,54 @@ function App() {
             </div>
           )}
 
-          {/* TAB 3: SOPORTE / ESCALACIÓN */}
+          {/* TAB 3: SOPORTE */}
           {activeTab === "incidencias" && (
             <div className="space-y-8">
-              
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                
                 {/* Crear Incidencia */}
-                <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-md space-y-4 flex flex-col justify-between">
+                <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-md space-y-4 flex flex-col">
                   <div>
-                    <h2 className="text-xl font-bold text-[#162b4e]">Reportar Incidencia</h2>
+                    <h2 className="text-xl font-bold text-[#162b4e]">Centro de Ayuda</h2>
                     <p className="text-xs text-slate-400 mt-1">Soporte técnico y reporte de problemas operativos.</p>
                     <form onSubmit={handleCrearIncidencia} className="space-y-4 mt-6">
+                      <div>
+                        <label className="block text-xs font-semibold uppercase text-slate-500 mb-1.5">Categoría</label>
+                        <select
+                          required
+                          value={nuevaIncidenciaCategoria}
+                          onChange={e => setNuevaIncidenciaCategoria(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 focus:border-[#162b4e] rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none"
+                        >
+                          <option value="">Seleccione un módulo...</option>
+                          <option value="Vuelos">Vuelos</option>
+                          <option value="Reservas">Reservas</option>
+                          <option value="Buscador Inteligente">Buscador Inteligente</option>
+                          <option value="Aparcamiento QR">Aparcamiento QR</option>
+                          <option value="General">General</option>
+                        </select>
+                      </div>
+
+                      {/* Base de Conocimientos (Autoayuda) */}
+                      {nuevaIncidenciaCategoria === 'Buscador Inteligente' && (
+                        <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl text-xs text-blue-800">
+                          <strong>💡 Sugerencia rápida:</strong> ¿Buscas saber la duración de tu paquete? Recuerda que el buscador automático empareja vuelos que coincidan exactamente con la cantidad de días que elegiste en el filtro.
+                        </div>
+                      )}
+                      {nuevaIncidenciaCategoria === 'Aparcamiento QR' && (
+                        <div className="bg-rose-50 border border-rose-200 p-3 rounded-xl text-xs text-rose-800">
+                          <strong>⚠️ Atención:</strong> Si tienes problemas en la barrera, este ticket será marcado como prioridad CRÍTICA y escalado de inmediato.
+                        </div>
+                      )}
+
                       <div>
                         <label className="block text-xs font-semibold uppercase text-slate-500 mb-1.5">Describa su incidencia</label>
                         <textarea 
                           rows="4"
+                          required
                           value={nuevaIncidenciaText}
                           onChange={e => setNuevaIncidenciaText(e.target.value)}
                           className="w-full bg-slate-50 border border-slate-200 focus:border-[#162b4e] rounded-xl px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white text-xs"
-                          placeholder="Detalle el problema con fecha y lugar de estacionamiento o vuelo..."
+                          placeholder="Detalle el problema con fecha y lugar..."
                         />
                       </div>
                       <button 
@@ -1078,7 +1146,7 @@ function App() {
                     </form>
                   </div>
                   {incidenciaMsg && (
-                    <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-xs text-emerald-600 text-center">
+                    <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-xs text-emerald-600 text-center mt-auto">
                       {incidenciaMsg}
                     </div>
                   )}
@@ -1087,81 +1155,144 @@ function App() {
                 {/* Bandeja de Casos */}
                 <div className="xl:col-span-2 bg-white border border-slate-200 p-6 rounded-3xl shadow-md space-y-6">
                   <div>
-                    <h3 className="text-lg font-bold text-[#162b4e]">Bandeja de Incidencias Operativas</h3>
-                    <p className="text-xs text-slate-400 mt-1">Matriz de Escalación de Roles (Cliente → Soporte → Gerente → Administrador)</p>
+                    <h3 className="text-lg font-bold text-[#162b4e]">Mesa de Ayuda (Tickets)</h3>
+                    <p className="text-xs text-slate-400 mt-1">Gestión y trazabilidad de incidencias.</p>
                   </div>
 
-                  <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                  <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                     {incidencias.map((ticket) => {
                       const canEscalate = 
                         (user && user.rol === 'Servicio al Cliente' && ticket.estado_actual === 'Abierto') ||
                         (user && user.rol === 'Gerente' && ticket.estado_actual === 'Escalado a Gerente');
+                      
+                      const isOwner = user && ticket.cliente_id === user.id;
+                      const canClose = ticket.estado_actual !== 'Cerrado' && (isOwner || (user && ['Servicio al Cliente', 'Gerente', 'Administrador'].includes(user.rol)));
+                      const canComment = ticket.estado_actual !== 'Cerrado' && user;
+
+                      const priorityColor = ticket.nivel_prioridad === 'Crítica' ? 'bg-rose-100 text-rose-800 border-rose-300' :
+                                           ticket.nivel_prioridad === 'Alta' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                                           'bg-blue-100 text-blue-800 border-blue-300';
 
                       return (
-                        <div key={ticket.ticket_codigo} className="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-4">
-                          <div className="flex justify-between items-start gap-4">
+                        <div key={ticket.ticket_codigo} className={`bg-slate-50 border ${ticket.nivel_prioridad === 'Crítica' ? 'border-rose-200' : 'border-slate-200'} p-5 rounded-2xl space-y-4`}>
+                          <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                             <div>
-                              <span className="bg-white border border-slate-200 px-2 py-0.5 rounded text-xs font-bold text-[#162b4e] block w-max shadow-sm">
-                                {ticket.ticket_codigo}
-                              </span>
+                              <div className="flex items-center space-x-2">
+                                <span className="bg-white border border-slate-200 px-2 py-0.5 rounded text-xs font-bold text-[#162b4e] shadow-sm">
+                                  {ticket.ticket_codigo}
+                                </span>
+                                <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${priorityColor}`}>
+                                  {ticket.nivel_prioridad || 'Media'}
+                                </span>
+                                <span className="bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                                  {ticket.categoria || 'General'}
+                                </span>
+                              </div>
                               <span className="text-[10px] text-slate-400 mt-1 block">Creado: {new Date(ticket.fecha_creacion).toLocaleString()}</span>
                             </div>
-                            <span className="px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#162b4e] text-xs font-bold">
-                              {ticket.estado_actual}
-                            </span>
+                            <div className="flex items-center space-x-2">
+                              <span className={`px-3 py-1 rounded-full border text-xs font-bold ${ticket.estado_actual === 'Cerrado' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-blue-50 border-blue-200 text-[#162b4e]'}`}>
+                                {ticket.estado_actual}
+                              </span>
+                              {canClose && (
+                                <button onClick={() => handleCerrarIncidencia(ticket.ticket_codigo)} className="text-[10px] font-bold text-rose-500 hover:text-rose-700 underline">
+                                  Cerrar Ticket
+                                </button>
+                              )}
+                            </div>
                           </div>
 
-                          <p className="text-xs text-slate-700 leading-normal bg-white p-3 rounded-xl border border-slate-100">
+                          <p className="text-xs text-slate-700 leading-normal bg-white p-3 rounded-xl border border-slate-100 font-medium">
                             {ticket.descripcion_problema}
                           </p>
 
                           <div className="space-y-2 border-t border-slate-200/60 pt-3">
                             <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Historial de Trazabilidad</span>
                             {ticket.historial_estados?.map((log, idx) => (
-                              <div key={idx} className="bg-white p-2.5 rounded-lg border border-slate-150 text-[10px] space-y-1 shadow-sm">
+                              <div key={idx} className={`bg-white p-2.5 rounded-lg border ${log.estado === 'Cerrado' ? 'border-emerald-200' : 'border-slate-150'} text-[10px] space-y-1 shadow-sm`}>
                                 <div className="flex justify-between font-bold text-slate-600">
-                                  <span>{log.estado} ({log.usuario_nombre})</span>
-                                  <span className="text-slate-400 font-medium">{new Date(log.fecha).toLocaleDateString()}</span>
+                                  <span>{log.estado} <span className="text-slate-400">({log.usuario_nombre})</span></span>
+                                  <span className="text-slate-400 font-medium">{new Date(log.fecha).toLocaleString()}</span>
                                 </div>
-                                <p className="text-slate-500 italic">"{log.comentario}"</p>
+                                <p className="text-slate-600 font-medium break-words">"{log.comentario}"</p>
                               </div>
                             ))}
                           </div>
 
-                          {canEscalate && (
+                          {canComment && (
                             <div className="pt-2">
-                              {activeTicketForEscalation === ticket.ticket_codigo ? (
-                                <form onSubmit={handleEscalarIncidencia} className="space-y-2">
+                              {activeTicketForComment === ticket.ticket_codigo ? (
+                                <form onSubmit={(e) => handleComentarIncidencia(e, ticket.ticket_codigo)} className="space-y-2">
                                   <input 
                                     type="text" 
-                                    placeholder="Agrega un comentario de escalamiento..." 
-                                    value={escalarComentario}
-                                    onChange={e => setEscalarComentario(e.target.value)}
+                                    placeholder="Agrega una respuesta al cliente..." 
+                                    value={comentarioNormal}
+                                    onChange={e => setComentarioNormal(e.target.value)}
                                     className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none"
                                   />
                                   <div className="flex justify-end space-x-2">
                                     <button 
                                       type="button" 
-                                      onClick={() => setActiveTicketForEscalation("")}
+                                      onClick={() => setActiveTicketForComment("")}
                                       className="px-3 py-1.5 bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold"
                                     >
                                       Cancelar
                                     </button>
                                     <button 
                                       type="submit" 
-                                      className="px-3 py-1.5 bg-amber-500 text-slate-950 rounded-lg text-[10px] font-bold shadow"
+                                      className="px-3 py-1.5 bg-[#162b4e] text-white rounded-lg text-[10px] font-bold shadow hover:bg-[#0f1f3a]"
                                     >
-                                      Confirmar Escalar caso
+                                      Enviar Respuesta
                                     </button>
                                   </div>
                                 </form>
                               ) : (
-                                <button 
-                                  onClick={() => setActiveTicketForEscalation(ticket.ticket_codigo)}
-                                  className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition shadow"
-                                >
-                                  Escalar caso
-                                </button>
+                                <div className="flex space-x-2">
+                                  <button 
+                                    onClick={() => setActiveTicketForComment(ticket.ticket_codigo)}
+                                    className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-xl text-[10px] transition shadow-sm"
+                                  >
+                                    Responder
+                                  </button>
+                                  
+                                  {canEscalate && (
+                                    <>
+                                      {activeTicketForEscalation === ticket.ticket_codigo ? (
+                                        <form onSubmit={handleEscalarIncidencia} className="flex-1 space-y-2 ml-2">
+                                          <input 
+                                            type="text" 
+                                            placeholder="Motivo de escalación..." 
+                                            value={escalarComentario}
+                                            onChange={e => setEscalarComentario(e.target.value)}
+                                            className="w-full bg-white border border-rose-200 rounded-lg px-3 py-1.5 text-[10px] text-slate-900 focus:outline-none"
+                                          />
+                                          <div className="flex justify-end space-x-2">
+                                            <button 
+                                              type="button" 
+                                              onClick={() => setActiveTicketForEscalation("")}
+                                              className="px-2 py-1 bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold"
+                                            >
+                                              Cancelar
+                                            </button>
+                                            <button 
+                                              type="submit" 
+                                              className="px-2 py-1 bg-rose-500 text-white rounded-lg text-[10px] font-bold shadow"
+                                            >
+                                              Confirmar Escalar
+                                            </button>
+                                          </div>
+                                        </form>
+                                      ) : (
+                                        <button 
+                                          onClick={() => setActiveTicketForEscalation(ticket.ticket_codigo)}
+                                          className="px-3 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold rounded-xl text-[10px] transition shadow-sm border border-rose-200"
+                                        >
+                                          Escalar a Superior
+                                        </button>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
                               )}
                             </div>
                           )}

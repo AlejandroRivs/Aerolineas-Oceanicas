@@ -529,7 +529,7 @@ router.get('/api/incidencias', async (ctx) => {
 
 // Crear incidencia
 router.post('/api/incidencias/crear', async (ctx) => {
-  const { descripcion } = ctx.request.body;
+  const { descripcion, categoria } = ctx.request.body;
   const user = ctx.session.user;
 
   if (!user) {
@@ -538,14 +538,22 @@ router.post('/api/incidencias/crear', async (ctx) => {
     return;
   }
 
+  let nivelPrioridad = 'Media';
+  if (categoria === 'Aparcamiento QR') {
+    nivelPrioridad = 'Crítica';
+  } else if (categoria === 'Reservas' || categoria === 'Vuelos') {
+    nivelPrioridad = 'Alta';
+  }
+
   const ticketCodigo = 'INC-2026-' + Math.floor(1000 + Math.random() * 9000);
   const incidencia = {
     ticket_codigo: ticketCodigo,
     cliente_id: user.id,
     fecha_creacion: new Date().toISOString(),
+    categoria: categoria || 'General',
     descripcion_problema: descripcion,
     estado_actual: 'Abierto',
-    nivel_prioridad: 'Media',
+    nivel_prioridad: nivelPrioridad,
     historial_estados: [
       {
         estado: 'Abierto',
@@ -599,6 +607,49 @@ router.post('/api/incidencias/escalar', async (ctx) => {
 
   await db.actualizarEstadoEscalacion(ticketCodigo, nuevoEstado, nuevoRolAsignado, user.nombre, comentario);
   ctx.body = { success: true, nuevoEstado };
+});
+
+// Comentar incidencia
+router.post('/api/incidencias/comentar', async (ctx) => {
+  const { ticketCodigo, comentario } = ctx.request.body;
+  const user = ctx.session.user;
+
+  if (!user) {
+    ctx.status = 401;
+    ctx.body = { error: 'Inicie sesión.' };
+    return;
+  }
+
+  const escalaciones = await db.getEscalaciones();
+  const ticket = escalaciones.find(t => t.ticket_codigo === ticketCodigo);
+
+  if (!ticket) {
+    ctx.status = 404;
+    ctx.body = { error: 'Incidencia no encontrada.' };
+    return;
+  }
+
+  // Reuse actualizarEstadoEscalacion but maintain the current state and assigned role
+  const currentState = ticket.estado_actual;
+  const currentAssignedRole = ticket.historial_estados[ticket.historial_estados.length - 1].asignado_a_rol;
+  
+  await db.actualizarEstadoEscalacion(ticketCodigo, currentState, currentAssignedRole, user.nombre, comentario);
+  ctx.body = { success: true };
+});
+
+// Cerrar incidencia
+router.post('/api/incidencias/cerrar', async (ctx) => {
+  const { ticketCodigo, comentario } = ctx.request.body;
+  const user = ctx.session.user;
+
+  if (!user) {
+    ctx.status = 401;
+    ctx.body = { error: 'Inicie sesión.' };
+    return;
+  }
+
+  await db.actualizarEstadoEscalacion(ticketCodigo, 'Cerrado', 'Ninguno', user.nombre, comentario || 'Incidencia cerrada por el usuario.');
+  ctx.body = { success: true };
 });
 
 // Modificar Rol (Solo Administrador)
