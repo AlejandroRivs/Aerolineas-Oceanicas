@@ -3,6 +3,7 @@ const { MongoClient } = require('mongodb');
 
 // Estado en memoria para el Fallback Mock DB
 const mockDb = {
+  usuarios: [
     { id: 1, google_id: 'mock_google_id_1', email: 'cliente@oceanica.com', nombre: 'Juan Pérez (Mock)', avatar: null, saldo_monedas: 5000.00, rol: 'Cliente', ciudadesVisitadas: ['Santiago'] },
     { id: 2, google_id: 'mock_google_id_2', email: 'servicio@oceanica.com', nombre: 'Carlos Agente (Mock)', avatar: null, saldo_monedas: 0.00, rol: 'Servicio al Cliente', ciudadesVisitadas: [] },
     { id: 3, google_id: 'mock_google_id_3', email: 'gerente@oceanica.com', nombre: 'Marta Gerente (Mock)', avatar: null, saldo_monedas: 0.00, rol: 'Gerente', ciudadesVisitadas: [] },
