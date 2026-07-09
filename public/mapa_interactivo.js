@@ -107,7 +107,6 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
   };
 
   const ejecutarBuscadorInteligente = () => {
-    // Mapear los vuelos de la base de datos a la estructura del buscador
     const mapped = vuelos.map(v => {
       const horas = (v.duracion_vuelo_minutos || v.duracion || 180) / 60;
       let cat = "Historia";
@@ -127,7 +126,6 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
       
       if (cat === "Cultura") cat = "Historia";
 
-      // Mapeos específicos para consistencia de gustos
       if (v.destino_ciudad === "San Pedro de Atacama") {
         cat = "Desierto";
         atractivo = "Valle de la Luna";
@@ -153,70 +151,93 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
       };
     });
 
-    const tiempoDisponible = (parseInt(diasDisponibles) || 0) * 24;
+    const activeOrigin = searchTab === 'inteligente' ? origenInteligente : origenGeneral;
+    
+    const matchesActiveOrigin = (str) => {
+      if (!str) return false;
+      if (activeOrigin === 'Todos') return true;
+      const cleanStr = str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const cleanOrigin = activeOrigin.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      return cleanStr.includes(cleanOrigin);
+    };
+
+    const vuelosIdaCandidates = mapped.filter(v => {
+      return matchesActiveOrigin(v.origen);
+    });
+
+    const vuelosVueltaCandidates = mapped.filter(v => {
+      return matchesActiveOrigin(v.destino_ciudad) || matchesActiveOrigin(v.destino_pais);
+    });
+
+    const paquetes = [];
+
+    vuelosIdaCandidates.forEach(ida => {
+      vuelosVueltaCandidates.forEach(vuelta => {
+        const origenVueltaLimpio = vuelta.origen.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const destinoIdaLimpio = ida.destino_ciudad.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        
+        if (origenVueltaLimpio.includes(destinoIdaLimpio)) {
+          const fechaIda = new Date(ida.fecha_salida);
+          const fechaVuelta = new Date(vuelta.fecha_salida);
+          const diffMs = fechaVuelta.getTime() - fechaIda.getTime();
+          const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+          if (diffDays === Number(diasDisponibles)) {
+            const totalPrice = ida.precio_monedas_oceanicas + vuelta.precio_monedas_oceanicas;
+            const tiempoDisponible = Number(diasDisponibles) * 24;
+            const tiempoVueloTotal = (ida.tiempo_vuelo_horas + vuelta.tiempo_vuelo_horas);
+            const tiempoNetoVisita = tiempoDisponible - tiempoVueloTotal;
+
+            paquetes.push({
+              id: `${ida.id}-${vuelta.id}`,
+              vueloIda: ida,
+              vueloVuelta: vuelta,
+              precioTotal: totalPrice,
+              tiempoNetoVisita,
+              riesgoRetrasoHoras: (tiempoVueloTotal * 0.15).toFixed(1),
+              pais_destino: ida.pais_destino,
+              ciudad_destino: ida.ciudad_destino,
+              categoria_gustos: ida.categoria_gustos,
+              atractivo_turistico: ida.atractivo_turistico,
+              fecha_salida: ida.fecha_salida,
+              fecha_llegada: vuelta.fecha_salida
+            });
+          }
+        }
+      });
+    });
 
     let resultado = [];
 
     if (searchTab === 'inteligente') {
-      resultado = mapped.filter(vuelo => {
-        // Filtrar por lugar de salida (Buscador Inteligente)
-        const cumpleOrigen = origenInteligente === 'Todos' || (vuelo.origen && vuelo.origen.includes(origenInteligente));
+      resultado = paquetes.filter(pkg => {
+        const cumpleGusto = gusto === 'Todos' || pkg.categoria_gustos === gusto;
+        const cumplePresupuesto = pkg.precioTotal <= presupuesto;
         
-        const cumpleGusto = gusto === 'Todos' || vuelo.categoria_gustos === gusto;
-        const cumplePresupuesto = vuelo.precio_monedas_oceanicas <= presupuesto;
-        
-        // El tiempo de vuelo es ida y vuelta (multiplicado por 2)
-        const tiempoVueloTotal = vuelo.tiempo_vuelo_horas * 2;
-        const cumpleTiempo = tiempoDisponible > tiempoVueloTotal;
-
-        // Filtrar por el día seleccionado en el calendario (YYYY-MM-DD)
-        const diaVuelo = vuelo.fecha_salida ? vuelo.fecha_salida.split('T')[0] : '';
+        const diaVuelo = pkg.fecha_salida ? pkg.fecha_salida.split('T')[0] : '';
         const cumpleFecha = diaVuelo === diaSalida;
         
-        // Filtrar por no visitados (según países gestionados en la ventana emergente)
-        const esNoVisitado = !soloNoVisitados || !paisesVisitados.includes(vuelo.pais_destino);
+        const esNoVisitado = !soloNoVisitados || !paisesVisitados.includes(pkg.pais_destino);
 
-        return cumpleOrigen && cumpleGusto && cumplePresupuesto && cumpleTiempo && cumpleFecha && esNoVisitado;
-      }).map(vuelo => {
-        const tiempoVueloTotal = vuelo.tiempo_vuelo_horas * 2;
-        const tiempoNetoVisita = tiempoDisponible - tiempoVueloTotal;
-
-        return {
-          ...vuelo,
-          tiempoNetoVisita,
-          riesgoRetrasoHoras: (tiempoVueloTotal * 0.15).toFixed(1)
-        };
+        return cumpleGusto && cumplePresupuesto && cumpleFecha && esNoVisitado;
       });
     } else {
-      // Buscador General
-      resultado = mapped.filter(vuelo => {
-        const cumpleOrigen = origenGeneral === 'Todos' || (vuelo.origen && vuelo.origen.includes(origenGeneral));
-        const cumpleDestino = destinoGeneral === 'Todos' || (vuelo.destino_ciudad && vuelo.destino_ciudad.includes(destinoGeneral)) || (vuelo.destino_pais && vuelo.destino_pais.includes(destinoGeneral));
+      resultado = paquetes.filter(pkg => {
+        const cumpleDestino = destinoGeneral === 'Todos' || 
+          pkg.ciudad_destino.includes(destinoGeneral) || 
+          pkg.pais_destino.includes(destinoGeneral);
         
-        const diaSalidaVuelo = vuelo.fecha_salida ? vuelo.fecha_salida.split('T')[0] : '';
+        const diaSalidaVuelo = pkg.fecha_salida ? pkg.fecha_salida.split('T')[0] : '';
         const cumpleSalida = !fechaSalidaGeneral || diaSalidaVuelo === fechaSalidaGeneral;
         
-        const diaLlegadaVuelo = vuelo.fecha_llegada ? vuelo.fecha_llegada.split('T')[0] : '';
+        const diaLlegadaVuelo = pkg.fecha_llegada ? pkg.fecha_llegada.split('T')[0] : '';
         const cumpleLlegada = !fechaLlegadaGeneral || diaLlegadaVuelo === fechaLlegadaGeneral;
 
-        return cumpleOrigen && cumpleDestino && cumpleSalida && cumpleLlegada;
-      }).map(vuelo => {
-        const tiempoVueloTotal = vuelo.tiempo_vuelo_horas * 2;
-        // Asignar estancia neta si hay datos válidos (sino 0)
-        let tiempoNetoVisita = 0;
-        if (vuelo.fecha_salida && vuelo.fecha_llegada) {
-          const salidaMs = new Date(vuelo.fecha_salida).getTime();
-          const llegadaMs = new Date(vuelo.fecha_llegada).getTime();
-          tiempoNetoVisita = Math.max(0, (llegadaMs - salidaMs) / (1000 * 60 * 60) - tiempoVueloTotal);
-        }
-
-        return {
-          ...vuelo,
-          tiempoNetoVisita,
-          riesgoRetrasoHoras: (tiempoVueloTotal * 0.15).toFixed(1)
-        };
+        return cumpleDestino && cumpleSalida && cumpleLlegada;
       });
     }
+
+    resultado.sort((a, b) => a.precioTotal - b.precioTotal);
 
     setVuelosFiltrados(resultado);
   };
@@ -244,74 +265,120 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
     }
   };
 
-  const renderVuelosCards = (vuelosList, isFloating = false) => (
-    <div className={`grid grid-cols-1 ${isFloating ? '' : 'md:grid-cols-2 lg:grid-cols-3'} gap-6 overflow-y-auto pr-2 w-full h-full p-4`}>
-      {vuelosList.map((vuelo, index) => (
-        <div key={index} className="bg-white border border-slate-200 rounded-3xl p-5 flex flex-col justify-between shadow-lg hover:shadow-xl transition duration-200 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#162b4e] to-blue-500"></div>
-          <div className="space-y-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <span className="text-[10px] font-black text-blue-600 tracking-widest uppercase bg-blue-50 px-2 py-0.5 rounded-full mb-2 inline-block">OC-{100 + index}</span>
-                <div className="flex items-center space-x-2 text-[#162b4e]">
-                  <span className="text-sm font-bold">{vuelo.origen || 'Origen'}</span>
-                  <span className="text-xs text-slate-400">→</span>
-                  <span className="text-sm font-bold">{vuelo.ciudad_destino}</span>
-                </div>
-                <p className="text-xs text-slate-500 font-medium mt-1">{vuelo.pais_destino} • <span className="italic">{vuelo.categoria_gustos}</span></p>
-                <div className="mt-2 space-y-0.5 text-[11px] text-slate-500">
-                  <div className="flex items-center space-x-1">
-                    <span className="font-semibold text-slate-400">Salida:</span>
-                    <span className="font-bold text-slate-700">{formatFecha(vuelo.fecha_salida)}</span>
+  const renderVuelosCards = (vuelosList, isFloating = false) => {
+    return (
+      <div className={`grid grid-cols-1 ${isFloating ? '' : 'md:grid-cols-2 lg:grid-cols-3'} gap-6 overflow-y-auto pr-2 w-full h-full p-4`}>
+        {vuelosList.map((pkg) => {
+          const ida = pkg.vueloIda;
+          const vuelta = pkg.vueloVuelta;
+          const esAhorro = pkg.precioTotal <= (presupuesto * 0.7);
+
+          return (
+            <div key={pkg.id} className="bg-white border border-slate-200 rounded-3xl p-5 flex flex-col justify-between shadow-lg hover:shadow-xl transition duration-200 relative overflow-hidden text-slate-800">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#162b4e] to-emerald-500"></div>
+              
+              <div className="space-y-4">
+                <div className="flex justify-between items-start gap-2">
+                  <div>
+                    <span className="text-[10px] font-black text-blue-600 tracking-widest uppercase bg-blue-50 px-2 py-0.5 rounded-full mb-1.5 inline-block">Paquete de Vuelo</span>
+                    <h4 className="text-sm font-black text-[#162b4e] leading-tight">{pkg.ciudad_destino}, {pkg.pais_destino}</h4>
+                    <p className="text-[11px] text-slate-500 font-semibold mt-0.5">{pkg.atractivo_turistico} • <span className="italic font-medium">{pkg.categoria_gustos}</span></p>
                   </div>
-                  {vuelo.fecha_llegada && (
-                    <div className="flex items-center space-x-1">
-                      <span className="font-semibold text-slate-400">Regreso:</span>
-                      <span className="font-bold text-slate-700">{formatFecha(vuelo.fecha_llegada)}</span>
-                    </div>
-                  )}
+                  <div className="text-right flex-shrink-0">
+                    <span className="block text-[10px] uppercase font-bold text-slate-400 mb-0.5">Precio Total</span>
+                    <span className="font-black text-emerald-600 text-base">{pkg.precioTotal} MO</span>
+                    {esAhorro && (
+                      <span className="block text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 mt-1 text-center font-mono">
+                        Bajo el presupuesto
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Vuelo Ida */}
+                <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100 space-y-1">
+                  <div className="flex justify-between items-center text-[10px] font-black text-slate-400">
+                    <span className="text-blue-800 font-bold uppercase tracking-wider">Vuelo Ida</span>
+                    <span>{ida.codigo_vuelo}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-slate-700">
+                    <span className="font-semibold">{ida.origen.split(',')[0]} → {ida.destino_ciudad}</span>
+                    <span className="font-bold">{formatFecha(ida.fecha_salida)}</span>
+                  </div>
+                </div>
+
+                {/* Vuelo Regreso */}
+                <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100 space-y-1">
+                  <div className="flex justify-between items-center text-[10px] font-black text-slate-400">
+                    <span className="text-blue-800 font-bold uppercase tracking-wider">Vuelo Regreso</span>
+                    <span>{vuelta.codigo_vuelo}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-slate-700">
+                    <span className="font-semibold">{vuelta.origen.split(',')[0]} → {vuelta.destino_ciudad}</span>
+                    <span className="font-bold">{formatFecha(vuelta.fecha_salida)}</span>
+                  </div>
+                </div>
+
+                {/* Datos estancia */}
+                <div className="grid grid-cols-2 gap-2 bg-blue-50/20 rounded-2xl p-3 border border-blue-150/40 text-xs">
+                  <div>
+                    <span className="block text-[9px] uppercase font-bold text-slate-400">Estancia Neta</span>
+                    <span className="font-bold text-[#162b4e]">{pkg.tiempoNetoVisita.toFixed(1)} h libres</span>
+                  </div>
+                  <div>
+                    <span className="block text-[9px] uppercase font-bold text-slate-400">Colchón Retrasos</span>
+                    <span className="font-bold text-amber-600">+{pkg.riesgoRetrasoHoras}h colchón</span>
+                  </div>
                 </div>
               </div>
-              <div className="text-right">
-                <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Precio</span>
-                <span className="font-black text-emerald-600 text-lg">{vuelo.precio_monedas_oceanicas} MO</span>
+
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <button 
+                  onClick={() => handleBookFlight(pkg)}
+                  className="w-full py-2.5 bg-[#162b4e] hover:bg-blue-800 text-white font-bold rounded-xl text-xs transition duration-200 shadow-md"
+                >
+                  Reservar Paquete
+                </button>
               </div>
             </div>
+          );
+        })}
 
-            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3 space-y-2 text-xs text-slate-600">
-              <div className="flex justify-between">
-                <span className="font-medium text-slate-500">Duración Vuelo (I/V):</span>
-                <span className="font-bold text-slate-700">{(vuelo.tiempo_vuelo_horas * 2).toFixed(1)}h</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium text-slate-500">Estancia Neta:</span>
-                <span className="font-black text-emerald-600">{vuelo.tiempoNetoVisita.toFixed(1)} hrs</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium text-slate-500">Colchón Retrasos:</span>
-                <span className="font-bold text-amber-600">+{vuelo.riesgoRetrasoHoras}h rec.</span>
+        {vuelosList.length === 0 && (
+          <div className="col-span-full py-8 text-center max-w-md mx-auto space-y-5">
+            <p className="text-slate-400 text-xs font-bold leading-normal">
+              No hay vuelos exactos para los parámetros actuales.
+            </p>
+            <div className="bg-slate-50 border border-slate-200 rounded-3xl p-5 space-y-3.5 text-left">
+              <span className="block text-[10px] uppercase font-black text-slate-500 tracking-wider">Sugerencias de Flexibilidad</span>
+              <div className="flex flex-col space-y-2">
+                <button 
+                  onClick={() => setPresupuesto(p => p + 500)}
+                  className="w-full py-2 bg-white hover:bg-slate-100 text-[#162b4e] font-bold rounded-xl text-xs transition border border-slate-200 text-left px-4 flex justify-between"
+                >
+                  <span>Aumentar presupuesto</span>
+                  <span className="text-emerald-600">+500 MO</span>
+                </button>
+                <button 
+                  onClick={() => setDiasDisponibles(d => d + 1)}
+                  className="w-full py-2 bg-white hover:bg-slate-100 text-[#162b4e] font-bold rounded-xl text-xs transition border border-slate-200 text-left px-4 flex justify-between"
+                >
+                  <span>Ampliar días de viaje</span>
+                  <span className="text-blue-600">+1 día</span>
+                </button>
+                <button 
+                  onClick={() => setGusto("Todos")}
+                  className="w-full py-2 bg-white hover:bg-slate-100 text-[#162b4e] font-bold rounded-xl text-xs transition border border-slate-200 text-left px-4"
+                >
+                  Cambiar experiencia a "Cualquiera"
+                </button>
               </div>
             </div>
           </div>
-
-          <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end">
-            <button 
-              onClick={() => handleBookFlight(vuelo.id)}
-              className="w-full py-2.5 bg-[#162b4e] hover:bg-blue-800 text-white font-bold rounded-xl text-xs transition duration-200 shadow-md"
-            >
-              Reservar Vuelo
-            </button>
-          </div>
-        </div>
-      ))}
-
-      {vuelosList.length === 0 && (
-        <div className="col-span-full py-12 text-center text-slate-400 text-sm font-medium">
-          No se encontraron vuelos disponibles con los filtros actuales.
-        </div>
-      )}
-    </div>
-  );
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6 font-sans">

@@ -312,9 +312,9 @@ router.post('/api/vuelos/buscar', async (ctx) => {
   ctx.body = vuelos;
 });
 
-// Reservar un vuelo
+// Reservar un vuelo o un paquete (Ida + Vuelta)
 router.post('/api/vuelos/reservar', async (ctx) => {
-  const { vueloId, datosPasajero } = ctx.request.body;
+  const { vueloId, vueloIdaId, vueloVueltaId, datosPasajero } = ctx.request.body;
   const user = ctx.session.user;
 
   if (!user) {
@@ -324,21 +324,58 @@ router.post('/api/vuelos/reservar', async (ctx) => {
   }
 
   try {
-    const vuelo = await db.getVueloById(vueloId);
-    if (!vuelo) {
-      ctx.status = 404;
-      ctx.body = { error: 'Vuelo no encontrado.' };
-      return;
+    if (vueloIdaId && vueloVueltaId) {
+      const vueloIda = await db.getVueloById(vueloIdaId);
+      const vueloVuelta = await db.getVueloById(vueloVueltaId);
+      if (!vueloIda || !vueloVuelta) {
+        ctx.status = 404;
+        ctx.body = { error: 'Uno de los vuelos del paquete no fue encontrado.' };
+        return;
+      }
+
+      const totalMonto = (vueloIda.precio_monedas || 0) + (vueloVuelta.precio_monedas || 0);
+      const userObj = await db.getUsuarioById(user.id);
+      if (!userObj || parseFloat(userObj.saldo_monedas) < totalMonto) {
+        ctx.status = 400;
+        ctx.body = { error: 'Saldo insuficiente para el paquete de vuelos.' };
+        return;
+      }
+
+      // Crear reservas para ambos vuelos
+      const reservaIda = await db.crearReserva(user.id, vueloIda.id, vueloIda.precio_monedas, datosPasajero);
+      const reservaVuelta = await db.crearReserva(user.id, vueloVuelta.id, vueloVuelta.precio_monedas, datosPasajero);
+
+      const userUpdated = await db.getUsuarioById(user.id);
+      ctx.session.user.saldo = userUpdated.saldo_monedas;
+      ctx.session.user.ciudadesVisitadas = userUpdated.ciudadesVisitadas || [];
+
+      ctx.body = { 
+        success: true, 
+        reserva: {
+          id: `${reservaIda.id}-${reservaVuelta.id}`,
+          usuario_id: user.id,
+          vuelo_id: vueloIda.id,
+          monto_pagado: totalMonto,
+          estado: 'Confirmado',
+          datos_pasajero: datosPasajero
+        }, 
+        nuevoSaldo: userUpdated.saldo_monedas 
+      };
+    } else {
+      const vuelo = await db.getVueloById(vueloId);
+      if (!vuelo) {
+        ctx.status = 404;
+        ctx.body = { error: 'Vuelo no encontrado.' };
+        return;
+      }
+
+      const reserva = await db.crearReserva(user.id, vuelo.id, vuelo.precio_monedas, datosPasajero);
+      const userUpdated = await db.getUsuarioById(user.id);
+      ctx.session.user.saldo = userUpdated.saldo_monedas;
+      ctx.session.user.ciudadesVisitadas = userUpdated.ciudadesVisitadas || [];
+
+      ctx.body = { success: true, reserva, nuevoSaldo: userUpdated.saldo_monedas };
     }
-
-    const reserva = await db.crearReserva(user.id, vuelo.id, vuelo.precio_monedas, datosPasajero);
-    
-    // Actualizar datos de sesión local
-    const userUpdated = await db.getUsuarioById(user.id);
-    ctx.session.user.saldo = userUpdated.saldo_monedas;
-    ctx.session.user.ciudadesVisitadas = userUpdated.ciudadesVisitadas || [];
-
-    ctx.body = { success: true, reserva, nuevoSaldo: userUpdated.saldo_monedas };
   } catch (error) {
     ctx.status = 400;
     ctx.body = { error: error.message };

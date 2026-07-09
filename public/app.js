@@ -261,16 +261,23 @@ function App() {
     setReservasUsuario([]);
   };
 
-  // Reservar Vuelo (Abre el Formulario Ampliado de Pasajero)
-  const handleBookFlight = (vueloId) => {
+  // Reservar Vuelo o Paquete (Abre el Formulario Ampliado de Pasajero)
+  const handleBookFlight = (item) => {
     if (!user) {
       alert("Por favor inicia sesión primero.");
       return;
     }
-    const flight = vuelos.find(v => v.id === vueloId);
-    if (!flight) return;
+    
+    let flightOrPackage = null;
+    if (item && item.vueloIda) {
+      flightOrPackage = item;
+    } else {
+      flightOrPackage = vuelos.find(v => v.id === item);
+    }
+    
+    if (!flightOrPackage) return;
 
-    setBookingFlight(flight);
+    setBookingFlight(flightOrPackage);
     setPassengerData({
       nombres_completos: user.nombre ? user.nombre.replace(" (Mock)", "") : "",
       fecha_nacimiento: "",
@@ -298,16 +305,27 @@ function App() {
     }
 
     try {
+      const isPackage = !!bookingFlight.vueloIda;
+      const bodyParams = isPackage 
+        ? { vueloIdaId: bookingFlight.vueloIda.id, vueloVueltaId: bookingFlight.vueloVuelta.id, datosPasajero: passengerData }
+        : { vueloId: bookingFlight.id, datosPasajero: passengerData };
+
       const res = await fetch('/api/vuelos/reservar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vueloId: bookingFlight.id, datosPasajero: passengerData })
+        body: JSON.stringify(bodyParams)
       });
       const data = await res.json();
       if (res.ok) {
         setLastReservation({
           ...data.reserva,
-          vuelo: bookingFlight,
+          vuelo: isPackage ? {
+            codigo_vuelo: `${bookingFlight.vueloIda.codigo_vuelo} / ${bookingFlight.vueloVuelta.codigo_vuelo}`,
+            origen: bookingFlight.vueloIda.origen,
+            destino_ciudad: bookingFlight.vueloIda.destino_ciudad,
+            fecha_salida: bookingFlight.vueloIda.fecha_salida,
+            fecha_llegada: bookingFlight.vueloVuelta.fecha_salida
+          } : bookingFlight,
           datos_pasajero: passengerData
         });
         setShowConfirmation(true);
