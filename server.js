@@ -1,3 +1,21 @@
+/**
+ * server.js - Servidor principal de Aerolineas Oceanicas
+ *
+ * Responsabilidades:
+ *   - Inicializar el servidor Koa y configurar middleware (sesiones, bodyparser, archivos estaticos).
+ *   - Definir el Gatekeeper: capa de proteccion perimetral por contrasena antes de cualquier acceso.
+ *   - Exponer las rutas de la API REST organizadas por modulo:
+ *       - Autenticacion (correo/contrasena, Google OAuth, sesion)
+ *       - Vuelos (listado, busqueda con filtros inteligentes, reservas)
+ *       - Aparcamiento QR (entrada, plaza, salida, tarifa, reinicio de demo)
+ *       - Incidencias / Escalacion (RBAC: Cliente, Servicio al Cliente, Gerente, Administrador)
+ *       - Administracion (gestion de usuarios y transferencia de monedas desde la boveda)
+ *   - Servir el frontend SPA (React) como archivos estaticos.
+ *
+ * Modo de operacion:
+ *   El servidor detecta automaticamente si Supabase esta configurado.
+ *   Si no lo esta, opera en modo Mock (base de datos en memoria para demostracion).
+ */
 require('dotenv').config();
 const Koa = require('koa');
 const Router = require('@koa/router');
@@ -497,16 +515,7 @@ router.post('/api/parking/simulate-midnight', async (ctx) => {
   }
 });
 
-// Estado de plazas de parking (público para el panel de presentación)
-router.get('/api/parking/slots', async (ctx) => {
-  try {
-    const slots = await db.getParkingSlots();
-    ctx.body = { slots };
-  } catch (error) {
-    ctx.status = 500;
-    ctx.body = { error: 'Error al obtener las plazas de parking.' };
-  }
-});
+
 
 // Reinicio global de la demostración de parking
 router.post('/api/parking/reset', async (ctx) => {
@@ -629,7 +638,7 @@ router.post('/api/incidencias/comentar', async (ctx) => {
     return;
   }
 
-  // Reuse actualizarEstadoEscalacion but maintain the current state and assigned role
+  // Mantiene el estado actual y el rol asignado; solo agrega el comentario al historial
   const currentState = ticket.estado_actual;
   const currentAssignedRole = ticket.historial_estados[ticket.historial_estados.length - 1].asignado_a_rol;
   

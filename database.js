@@ -1,3 +1,23 @@
+/**
+ * database.js - Capa de abstraccion de datos de Aerolineas Oceanicas
+ *
+ * Responsabilidades:
+ *   - Declarar el estado en memoria (mockDb) que actua como base de datos de demostracion
+ *     cuando Supabase no esta disponible. Contiene: usuarios, vuelos, credenciales,
+ *     reservas, transacciones, plazas de parking, historial de busquedas e incidencias.
+ *   - Detectar si Supabase y MongoDB estan configurados; si no lo estan, opera en modo Mock.
+ *   - Exportar el objeto unificado `db` con metodos que funcionan con cualquiera de los
+ *     backends (Mock, Supabase o MongoDB) de forma transparente para el servidor.
+ *
+ * Modulos de datos:
+ *   - Credenciales: autenticacion por email/password.
+ *   - Usuarios:     CRUD de perfiles, saldos y roles.
+ *   - Vuelos:       Catalogo de rutas y creacion de reservas.
+ *   - Parking:      Estado de plazas, flujo QR (entrada, plaza, salida) y reinicio de demo.
+ *   - Incidencias:  Registro, escalacion y cierre de tickets de soporte (MongoDB o Mock).
+ *   - Busquedas:    Historial de filtros de vuelos aplicados por el usuario (MongoDB o Mock).
+ *   - Boveda:       Transferencia de monedas desde el saldo del Administrador a otros usuarios.
+ */
 const { Pool } = require('pg');
 const { MongoClient } = require('mongodb');
 
@@ -2273,11 +2293,13 @@ if (process.env.MONGODB_URI) {
     });
 }
 
-// Interfaces unificadas de base de datos
+// Objeto unificado de base de datos.
+// Cada metodo verifica internamente si debe usar Mock, Supabase o MongoDB.
 const db = {
   useMock: true, // Se sobreescribirá dinámicamente abajo o se leerá directamente
   supabase: supabase,
-  // --- CREDENCIALES ---
+  // --- MODULO: CREDENCIALES ---
+  // Verifica email y contrasena para el flujo de login tradicional.
   async getCredencial(email, password) {
     if (useMock) {
       return mockDb.credenciales.find(c => c.email === email && c.password === password) || null;
@@ -2292,7 +2314,8 @@ const db = {
     return data;
   },
 
-  // --- USUARIOS ---
+  // --- MODULO: USUARIOS ---
+  // Consultas y mutaciones sobre el perfil del usuario, saldo y rol.
   async getUsuarioByGoogleId(googleId) {
     if (useMock) {
       return mockDb.usuarios.find(u => u.google_id === googleId) || null;
@@ -2495,7 +2518,8 @@ const db = {
     return { success: true, nuevoSaldoAdmin };
   },
 
-  // --- VUELOS ---
+  // --- MODULO: VUELOS ---
+  // Catalogo de rutas aereas y creacion de reservas con descuento de saldo.
   async getVuelos() {
     if (useMock) {
       return mockDb.vuelos;
@@ -2630,7 +2654,9 @@ const db = {
     return data;
   },
 
-  // --- PARKING ---
+  // --- MODULO: PARKING ---
+  // Gestion del estado de las plazas del estacionamiento aeroportuario.
+  // El flujo de uso es: qrEntrada -> qrPlaza -> qrSalida.
   async getParkingSlots() {
     if (useMock) {
       return Object.values(mockDb.parking);
@@ -2806,7 +2832,8 @@ const db = {
     return { success: true, message: 'Todas las plazas de producción en Supabase han sido reiniciadas.' };
   },
 
-  // --- MONGO DB MOCKS / WRAPPERS ---
+  // --- MODULO: HISTORIAL DE BUSQUEDAS (MongoDB) ---
+  // Registra los filtros de busqueda que el usuario aplica al explorar vuelos.
   async registrarBusqueda(searchRecord) {
     if (useMongo) {
       try {
@@ -2836,6 +2863,8 @@ const db = {
     return mockDb.searchHistory;
   },
 
+  // --- MODULO: INCIDENCIAS / ESCALACIONES (MongoDB) ---
+  // Ciclo de vida de los tickets de soporte: registro inicial, escalacion por rol y cierre.
   async registrarEscalacion(incidencia) {
     if (useMongo) {
       try {
