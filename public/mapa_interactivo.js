@@ -242,7 +242,7 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
         const cumpleGusto = gusto === 'Todos' || pkg.categoria_gustos === gusto;
         const cumplePresupuesto = pkg.precioTotal <= presupuesto;
         
-        const diaVuelo = pkg.fecha_salida ? pkg.fecha_salida.split('T')[0] : '';
+        const diaVuelo = pkg.fecha_salida ? pkg.fecha_salida.split('T')[0].split(' ')[0] : '';
         const cumpleFecha = diaVuelo === diaSalida;
         
         const esNoVisitado = !soloNoVisitados || !paisesVisitados.includes(pkg.pais_destino);
@@ -255,10 +255,10 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
           pkg.ciudad_destino.includes(destinoGeneral) || 
           pkg.pais_destino.includes(destinoGeneral);
         
-        const diaSalidaVuelo = pkg.fecha_salida ? pkg.fecha_salida.split('T')[0] : '';
+        const diaSalidaVuelo = pkg.fecha_salida ? pkg.fecha_salida.split('T')[0].split(' ')[0] : '';
         const cumpleSalida = !fechaSalidaGeneral || diaSalidaVuelo === fechaSalidaGeneral;
         
-        const diaLlegadaVuelo = pkg.fecha_llegada ? pkg.fecha_llegada.split('T')[0] : '';
+        const diaLlegadaVuelo = pkg.fecha_llegada ? pkg.fecha_llegada.split('T')[0].split(' ')[0] : '';
         const cumpleLlegada = !fechaLlegadaGeneral || diaLlegadaVuelo === fechaLlegadaGeneral;
 
         return cumpleDestino && cumpleSalida && cumpleLlegada;
