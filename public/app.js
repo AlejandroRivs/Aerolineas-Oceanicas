@@ -9,6 +9,23 @@ function App() {
 
   // Estados de Vuelos y Mapa
   const [vuelos, setVuelos] = useState([]);
+  const [bookingFlight, setBookingFlight] = useState(null);
+  const [passengerData, setPassengerData] = useState({
+    nombres_completos: "",
+    fecha_nacimiento: "",
+    genero: "",
+    tipo_documento: "Pasaporte",
+    numero_documento: "",
+    pais_emision: "",
+    fecha_vencimiento: "",
+    contacto_email: "",
+    contacto_telefono: "",
+    asiento: "Indiferente",
+    asistencia_especial: ""
+  });
+  const [reservasUsuario, setReservasUsuario] = useState([]);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [lastReservation, setLastReservation] = useState(null);
 
   // Estados de Parking
   const [parkingSlots, setParkingSlots] = useState([]);
@@ -39,6 +56,29 @@ function App() {
     fetchConfig();
   }, []);
 
+  const fetchReservasUsuario = async () => {
+    try {
+      const res = await fetch('/api/reservas');
+      if (res.ok) {
+        const data = await res.json();
+        setReservasUsuario(data);
+      }
+    } catch (e) {
+      console.error('Error al obtener reservas:', e);
+    }
+  };
+
+  const formatFecha = (fechaStr) => {
+    if (!fechaStr) return 'No especificada';
+    try {
+      const d = new Date(fechaStr);
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    } catch (e) {
+      return fechaStr;
+    }
+  };
+
   const fetchConfig = async () => {
     try {
       const res = await fetch('/api/config');
@@ -55,6 +95,8 @@ function App() {
       const data = await res.json();
       if (data.loggedIn) {
         setUser(data.user);
+        // Cargar reservas tras cargar la sesión del usuario
+        fetchReservasUsuario();
       }
     } catch (e) {
       console.error(e);
@@ -121,6 +163,7 @@ function App() {
         setUser(data.user);
         fetchParking();
         fetchIncidencias();
+        fetchReservasUsuario();
       } else {
         alert(data.error);
       }
@@ -142,6 +185,7 @@ function App() {
         setUser(data.user);
         fetchParking();
         fetchIncidencias();
+        fetchReservasUsuario();
       } else {
         alert(data.error);
       }
@@ -171,6 +215,7 @@ function App() {
                 }
                 fetchParking();
                 fetchIncidencias();
+                fetchReservasUsuario();
               } else {
                 alert(data.error);
               }
@@ -201,6 +246,7 @@ function App() {
           setShowWelcomePopup(true);
           fetchParking();
           fetchIncidencias();
+          fetchReservasUsuario();
         }
       } catch (e) {
         console.error(e);
@@ -212,30 +258,68 @@ function App() {
     await fetch('/api/auth/logout', { method: 'POST' });
     setUser(null);
     setMyOcupation(null);
+    setReservasUsuario([]);
   };
 
-  // Reservar Vuelo
-  const handleBookFlight = async (vueloId) => {
+  // Reservar Vuelo (Abre el Formulario Ampliado de Pasajero)
+  const handleBookFlight = (vueloId) => {
     if (!user) {
       alert("Por favor inicia sesión primero.");
       return;
     }
+    const flight = vuelos.find(v => v.id === vueloId);
+    if (!flight) return;
+
+    setBookingFlight(flight);
+    setPassengerData({
+      nombres_completos: user.nombre ? user.nombre.replace(" (Mock)", "") : "",
+      fecha_nacimiento: "",
+      genero: "",
+      tipo_documento: "Pasaporte",
+      numero_documento: "",
+      pais_emision: "",
+      fecha_vencimiento: "",
+      contacto_email: user.email || "",
+      contacto_telefono: "",
+      asiento: "Indiferente",
+      asistencia_especial: ""
+    });
+  };
+
+  const handleConfirmBooking = async (e) => {
+    e.preventDefault();
+    if (!bookingFlight) return;
+
+    if (!passengerData.nombres_completos || !passengerData.fecha_nacimiento || !passengerData.genero ||
+        !passengerData.tipo_documento || !passengerData.numero_documento || !passengerData.pais_emision ||
+        !passengerData.fecha_vencimiento || !passengerData.contacto_email || !passengerData.contacto_telefono) {
+      alert("Por favor complete todos los campos obligatorios.");
+      return;
+    }
+
     try {
       const res = await fetch('/api/vuelos/reservar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vueloId })
+        body: JSON.stringify({ vueloId: bookingFlight.id, datosPasajero: passengerData })
       });
       const data = await res.json();
       if (res.ok) {
-        alert("¡Vuelo reservado con éxito!");
+        setLastReservation({
+          ...data.reserva,
+          vuelo: bookingFlight,
+          datos_pasajero: passengerData
+        });
+        setShowConfirmation(true);
+        setBookingFlight(null);
         fetchSession();
         fetchVuelos();
+        fetchReservasUsuario();
       } else {
         alert(data.error);
       }
-    } catch (e) {
-      console.error(e);
+    } catch (err) {
+      alert("Error al procesar la reserva: " + err.message);
     }
   };
 
@@ -576,6 +660,18 @@ function App() {
               <span>Soporte / Escalación</span>
             </button>
 
+            {user && (
+              <button 
+                onClick={() => setActiveTab("reservas")}
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-bold text-sm transition duration-150 ${
+                  activeTab === "reservas" ? "bg-slate-100 text-[#162b4e] border-l-4 border-[#162b4e] shadow-sm" : "hover:bg-blue-900/40 text-white hover:text-white"
+                }`}
+              >
+                <i data-lucide="briefcase" className={`w-4 h-4 ${activeTab === "reservas" ? "text-[#162b4e]" : "text-white"}`}></i>
+                <span>Mis Reservas</span>
+              </button>
+            )}
+
             {user && user.rol === 'Administrador' && (
               <button 
                 onClick={() => setActiveTab("admin")}
@@ -602,6 +698,121 @@ function App() {
               handleBookFlight={handleBookFlight}
               user={user}
             />
+          )}
+
+          {/* TAB DE RESERVAS DEL USUARIO */}
+          {activeTab === "reservas" && user && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center pb-4 border-b border-slate-200">
+                <div>
+                  <h2 className="text-2xl font-black text-[#162b4e]">Mis Reservas</h2>
+                  <p className="text-xs text-slate-400 mt-1">Historial y estado de tus vuelos programados.</p>
+                </div>
+                <button 
+                  onClick={fetchReservasUsuario}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-[#162b4e] font-bold rounded-xl text-xs transition border border-slate-200"
+                >
+                  Actualizar historial
+                </button>
+              </div>
+
+              {reservasUsuario.length === 0 ? (
+                <div className="bg-white border border-slate-200 rounded-3xl p-8 text-center text-slate-400 text-sm font-medium shadow-sm">
+                  Aún no tienes ninguna reserva registrada.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-6">
+                  {reservasUsuario.map((reserva) => {
+                    const vuelo = reserva.vuelo || {};
+                    const pasajero = reserva.datos_pasajero || {};
+                    
+                    return (
+                      <div key={reserva.id} className="bg-white border border-slate-200 rounded-3xl p-6 shadow-md hover:shadow-lg transition relative overflow-hidden flex flex-col md:flex-row justify-between gap-6">
+                        <div className="absolute top-0 left-0 w-1.5 h-full bg-[#162b4e]"></div>
+                        
+                        {/* Info del Vuelo */}
+                        <div className="flex-1 space-y-4 md:border-r md:border-slate-100 md:pr-6">
+                          <div>
+                            <span className="text-[10px] font-black text-blue-600 tracking-widest uppercase bg-blue-50 px-2 py-0.5 rounded-full inline-block mb-2">
+                              {vuelo.codigo_vuelo || 'Código'}
+                            </span>
+                            <div className="flex items-center space-x-2 text-[#162b4e]">
+                              <span className="text-base font-bold">{vuelo.origen}</span>
+                              <span className="text-sm text-slate-400">→</span>
+                              <span className="text-base font-bold">{vuelo.destino_ciudad}</span>
+                            </div>
+                            <p className="text-xs text-slate-400 font-semibold mt-0.5">{vuelo.destino_pais}</p>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4 text-xs">
+                            <div>
+                              <span className="block text-[10px] uppercase font-bold text-slate-400 mb-0.5">Salida</span>
+                              <span className="font-bold text-slate-700">{formatFecha(vuelo.fecha_salida)}</span>
+                            </div>
+                            <div>
+                              <span className="block text-[10px] uppercase font-bold text-slate-400 mb-0.5">Regreso / Llegada</span>
+                              <span className="font-bold text-slate-700">{formatFecha(vuelo.fecha_llegada)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Info del Pasajero */}
+                        <div className="flex-1 space-y-3 md:border-r md:border-slate-100 md:pr-6">
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Detalles del Pasajero</span>
+                          {pasajero.nombres_completos ? (
+                            <div className="grid grid-cols-2 gap-3 text-xs">
+                              <div className="col-span-2">
+                                <span className="block text-[9px] uppercase font-bold text-slate-400">Nombre Completo</span>
+                                <span className="font-bold text-slate-800">{pasajero.nombres_completos}</span>
+                              </div>
+                              <div>
+                                <span className="block text-[9px] uppercase font-bold text-slate-400">Documento</span>
+                                <span className="font-bold text-slate-700">{pasajero.tipo_documento}: {pasajero.numero_documento}</span>
+                              </div>
+                              <div>
+                                <span className="block text-[9px] uppercase font-bold text-slate-400">Género / Nacimiento</span>
+                                <span className="font-bold text-slate-700">{pasajero.genero} • {pasajero.fecha_nacimiento}</span>
+                              </div>
+                              <div>
+                                <span className="block text-[9px] uppercase font-bold text-slate-400">Teléfono</span>
+                                <span className="font-bold text-slate-700">{pasajero.contacto_telefono}</span>
+                              </div>
+                              <div>
+                                <span className="block text-[9px] uppercase font-bold text-slate-400">Asiento</span>
+                                <span className="font-bold text-slate-700">{pasajero.asiento}</span>
+                              </div>
+                              {pasajero.asistencia_especial && (
+                                <div className="col-span-2">
+                                  <span className="block text-[9px] uppercase font-bold text-slate-400">Asistencia Especial</span>
+                                  <span className="font-bold text-amber-700">{pasajero.asistencia_especial}</span>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-500 font-medium">No se registraron datos de pasajero adicionales.</span>
+                          )}
+                        </div>
+
+                        {/* Info del Pago / Estado */}
+                        <div className="flex flex-col justify-between items-end text-right min-w-[120px]">
+                          <div>
+                            <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Monto Pagado</span>
+                            <span className="font-black text-emerald-600 text-lg">{reserva.monto_pagado} MO</span>
+                          </div>
+                          <div className="mt-4 md:mt-0 text-right">
+                            <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Estado de Reserva</span>
+                            <span className="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold inline-block">
+                              {reserva.estado}
+                            </span>
+                          </div>
+                        </div>
+
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           )}
 
           {/* TAB 2: APARCAMIENTO QR */}
@@ -973,6 +1184,276 @@ function App() {
               className="w-full py-3 bg-[#162b4e] hover:bg-blue-900 text-white font-bold rounded-xl transition duration-200 shadow-md"
             >
               ¡Empezar a Explorar!
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE FORMULARIO DE RESERVA DETALLADO */}
+      {bookingFlight && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-8 shadow-2xl border border-slate-100 my-8">
+            <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
+              <div>
+                <h3 className="text-xl font-bold text-[#162b4e]">Datos del Pasajero y Reserva</h3>
+                <p className="text-xs text-slate-400 mt-1">Vuelo: {bookingFlight.origen} → {bookingFlight.destino_ciudad} ({bookingFlight.codigo_vuelo})</p>
+              </div>
+              <button 
+                onClick={() => setBookingFlight(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmBooking} className="space-y-6">
+              {/* Sección 1: Datos del Pasajero */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-blue-600">1. Información del Pasajero</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 mb-1">Nombres y Apellidos Completos *</label>
+                    <input 
+                      type="text" 
+                      required
+                      placeholder="Tal como aparecen en su documento"
+                      value={passengerData.nombres_completos}
+                      onChange={e => setPassengerData({...passengerData, nombres_completos: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-[#162b4e] rounded-xl px-4 py-2.5 text-xs text-slate-950 focus:outline-none focus:bg-white"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-500 mb-1">Fecha de Nacimiento *</label>
+                      <input 
+                        type="date" 
+                        required
+                        value={passengerData.fecha_nacimiento}
+                        onChange={e => setPassengerData({...passengerData, fecha_nacimiento: e.target.value})}
+                        className="w-full bg-slate-50 border border-slate-200 focus:border-[#162b4e] rounded-xl px-3 py-2 text-xs text-slate-950 focus:outline-none focus:bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-500 mb-1">Género *</label>
+                      <select 
+                        required
+                        value={passengerData.genero}
+                        onChange={e => setPassengerData({...passengerData, genero: e.target.value})}
+                        className="w-full bg-slate-50 border border-slate-200 focus:border-[#162b4e] rounded-xl px-3 py-2.5 text-xs text-slate-950 focus:outline-none focus:bg-white"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Masculino">Masculino</option>
+                        <option value="Femenino">Femenino</option>
+                        <option value="Otro">Otro</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sección 2: Documento de Identidad */}
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-blue-600">2. Documento de Identidad</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-500 mb-1">Tipo de Documento *</label>
+                      <select 
+                        required
+                        value={passengerData.tipo_documento}
+                        onChange={e => setPassengerData({...passengerData, tipo_documento: e.target.value})}
+                        className="w-full bg-slate-50 border border-slate-200 focus:border-[#162b4e] rounded-xl px-3 py-2.5 text-xs text-slate-950 focus:outline-none focus:bg-white"
+                      >
+                        <option value="Pasaporte">Pasaporte</option>
+                        <option value="DNI">DNI</option>
+                        <option value="Identificación oficial">Identificación Oficial</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-500 mb-1">Número de Documento *</label>
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="Número"
+                        value={passengerData.numero_documento}
+                        onChange={e => setPassengerData({...passengerData, numero_documento: e.target.value})}
+                        className="w-full bg-slate-50 border border-slate-200 focus:border-[#162b4e] rounded-xl px-4 py-2.5 text-xs text-slate-950 focus:outline-none focus:bg-white"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-500 mb-1">País de Emisión *</label>
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="Ej. Guatemala"
+                        value={passengerData.pais_emision}
+                        onChange={e => setPassengerData({...passengerData, pais_emision: e.target.value})}
+                        className="w-full bg-slate-50 border border-slate-200 focus:border-[#162b4e] rounded-xl px-4 py-2.5 text-xs text-slate-950 focus:outline-none focus:bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-500 mb-1">Fecha de Vencimiento *</label>
+                      <input 
+                        type="date" 
+                        required
+                        value={passengerData.fecha_vencimiento}
+                        onChange={e => setPassengerData({...passengerData, fecha_vencimiento: e.target.value})}
+                        className="w-full bg-slate-50 border border-slate-200 focus:border-[#162b4e] rounded-xl px-3 py-2 text-xs text-slate-950 focus:outline-none focus:bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sección 3: Contacto */}
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-blue-600">3. Información de Contacto</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 mb-1">Correo Electrónico *</label>
+                    <input 
+                      type="email" 
+                      required
+                      placeholder="correo@ejemplo.com"
+                      value={passengerData.contacto_email}
+                      onChange={e => setPassengerData({...passengerData, contacto_email: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-[#162b4e] rounded-xl px-4 py-2.5 text-xs text-slate-950 focus:outline-none focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 mb-1">Teléfono Móvil (Internacional) *</label>
+                    <input 
+                      type="tel" 
+                      required
+                      placeholder="Ej. +502 4589 7412"
+                      value={passengerData.contacto_telefono}
+                      onChange={e => setPassengerData({...passengerData, contacto_telefono: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-[#162b4e] rounded-xl px-4 py-2.5 text-xs text-slate-950 focus:outline-none focus:bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Sección 4: Preferencias (Opcionales) */}
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-blue-600">4. Preferencias de Vuelo (Opcionales)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 mb-1">Selección de Asiento</label>
+                    <select 
+                      value={passengerData.asiento}
+                      onChange={e => setPassengerData({...passengerData, asiento: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-[#162b4e] rounded-xl px-3 py-2.5 text-xs text-slate-950 focus:outline-none focus:bg-white"
+                    >
+                      <option value="Indiferente">Indiferente</option>
+                      <option value="Ventana">Ventana</option>
+                      <option value="Pasillo">Pasillo</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 mb-1">Asistencia Especial</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ej. Silla de ruedas, ayuda visual o auditiva..."
+                      value={passengerData.asistencia_especial}
+                      onChange={e => setPassengerData({...passengerData, asistencia_especial: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-[#162b4e] rounded-xl px-4 py-2.5 text-xs text-slate-950 focus:outline-none focus:bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-6 border-t border-slate-100 flex justify-end space-x-3">
+                <button 
+                  type="button" 
+                  onClick={() => setBookingFlight(null)}
+                  className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs transition"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-8 py-3 bg-[#162b4e] hover:bg-blue-800 text-white font-bold rounded-xl text-xs transition shadow-md"
+                >
+                  Proceder con el Pago ({bookingFlight.precio_monedas || bookingFlight.precio || 0} MO)
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE CONFIRMACIÓN DE RESERVA REDISEÑADO */}
+      {showConfirmation && lastReservation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-8 shadow-2xl border border-slate-100 flex flex-col items-center text-center relative overflow-hidden">
+            {/* Top decorative gradient line */}
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-500 to-blue-600"></div>
+
+            <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-6 border border-emerald-100 mt-2">
+              <i data-lucide="check-circle" className="w-8 h-8 text-emerald-500"></i>
+            </div>
+            
+            <h3 className="text-2xl font-black text-[#162b4e] mb-1">Reserva Confirmada</h3>
+            <p className="text-xs text-slate-400 mb-6">Su reservación ha sido procesada de manera exitosa y debitada de su saldo.</p>
+            
+            {/* Detalles del ticket */}
+            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 w-full text-left space-y-4 mb-6">
+              <div className="flex justify-between items-center pb-3 border-b border-slate-200/60">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400">Código de Vuelo</span>
+                  <span className="block font-extrabold text-sm text-[#162b4e]">{lastReservation.vuelo?.codigo_vuelo}</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] uppercase font-bold text-slate-400">Transacción</span>
+                  <span className="block font-bold text-xs text-slate-600">Confirmada</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="text-[9px] uppercase font-bold text-slate-400">Origen</span>
+                  <span className="block font-bold text-xs text-[#162b4e]">{lastReservation.vuelo?.origen}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] uppercase font-bold text-slate-400">Destino</span>
+                  <span className="block font-bold text-xs text-[#162b4e]">{lastReservation.vuelo?.destino_ciudad}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] uppercase font-bold text-slate-400">Salida</span>
+                  <span className="block font-bold text-xs text-slate-700">{formatFecha(lastReservation.vuelo?.fecha_salida)}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] uppercase font-bold text-slate-400">Regreso / Llegada</span>
+                  <span className="block font-bold text-xs text-slate-700">{formatFecha(lastReservation.vuelo?.fecha_llegada)}</span>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-200/60">
+                <span className="text-[9px] uppercase font-bold text-slate-400 block mb-1">Pasajero Principal</span>
+                <div className="flex justify-between text-xs">
+                  <span className="font-bold text-slate-800">{lastReservation.datos_pasajero?.nombres_completos}</span>
+                  <span className="font-semibold text-slate-500">{lastReservation.datos_pasajero?.tipo_documento}: {lastReservation.datos_pasajero?.numero_documento}</span>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-200/60 flex justify-between items-center">
+                <span className="text-[10px] uppercase font-bold text-slate-400">Monto Debitado</span>
+                <span className="text-base font-black text-emerald-600">{lastReservation.monto_pagado} MO</span>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => {
+                setShowConfirmation(false);
+                setLastReservation(null);
+                setActiveTab("reservas");
+              }}
+              className="w-full py-3.5 bg-[#162b4e] hover:bg-blue-900 text-white font-bold rounded-xl transition duration-200 shadow-md text-xs uppercase tracking-wider"
+            >
+              Cerrar y Ver mis Reservas
             </button>
           </div>
         </div>

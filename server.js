@@ -314,7 +314,7 @@ router.post('/api/vuelos/buscar', async (ctx) => {
 
 // Reservar un vuelo
 router.post('/api/vuelos/reservar', async (ctx) => {
-  const { vueloId } = ctx.request.body;
+  const { vueloId, datosPasajero } = ctx.request.body;
   const user = ctx.session.user;
 
   if (!user) {
@@ -331,7 +331,7 @@ router.post('/api/vuelos/reservar', async (ctx) => {
       return;
     }
 
-    const reserva = await db.crearReserva(user.id, vuelo.id, vuelo.precio_monedas);
+    const reserva = await db.crearReserva(user.id, vuelo.id, vuelo.precio_monedas, datosPasajero);
     
     // Actualizar datos de sesión local
     const userUpdated = await db.getUsuarioById(user.id);
@@ -341,6 +341,23 @@ router.post('/api/vuelos/reservar', async (ctx) => {
     ctx.body = { success: true, reserva, nuevoSaldo: userUpdated.saldo_monedas };
   } catch (error) {
     ctx.status = 400;
+    ctx.body = { error: error.message };
+  }
+});
+
+// Obtener reservas del usuario actual
+router.get('/api/reservas', async (ctx) => {
+  const user = ctx.session.user;
+  if (!user) {
+    ctx.status = 401;
+    ctx.body = { error: 'Inicie sesión para ver sus reservas.' };
+    return;
+  }
+  try {
+    const reservas = await db.getReservasUsuario(user.id);
+    ctx.body = reservas;
+  } catch (error) {
+    ctx.status = 500;
     ctx.body = { error: error.message };
   }
 });

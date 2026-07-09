@@ -1387,7 +1387,7 @@ const db = {
     return data;
   },
 
-  async crearReserva(usuarioId, vueloId, monto) {
+  async crearReserva(usuarioId, vueloId, monto, datosPasajero) {
     if (useMock) {
       const user = mockDb.usuarios.find(u => u.id === Number(usuarioId));
       const vuelo = mockDb.vuelos.find(v => v.id === Number(vueloId));
@@ -1404,7 +1404,8 @@ const db = {
         vuelo_id: vueloId,
         fecha_reserva: new Date().toISOString(),
         monto_pagado: monto,
-        estado: 'Confirmado'
+        estado: 'Confirmado',
+        datos_pasajero: datosPasajero
       };
       mockDb.reservas.push(nuevaReserva);
       mockDb.transacciones.push({
@@ -1438,7 +1439,7 @@ const db = {
 
     const { data: reserva, error: resErr } = await supabase
       .from('reservas')
-      .insert([{ usuario_id: usuarioId, vuelo_id: vueloId, monto_pagado: monto, estado: 'Confirmado' }])
+      .insert([{ usuario_id: usuarioId, vuelo_id: vueloId, monto_pagado: monto, estado: 'Confirmado', datos_pasajero: datosPasajero }])
       .select()
       .single();
     if (resErr) throw resErr;
@@ -1449,6 +1450,26 @@ const db = {
     if (txErr) throw txErr;
 
     return reserva;
+  },
+
+  async getReservasUsuario(usuarioId) {
+    if (useMock) {
+      return mockDb.reservas
+        .filter(r => r.usuario_id === Number(usuarioId))
+        .map(r => {
+          const vuelo = mockDb.vuelos.find(v => v.id === r.vuelo_id);
+          return {
+            ...r,
+            vuelo
+          };
+        });
+    }
+    const { data, error } = await supabase
+      .from('reservas')
+      .select('*, vuelo:vuelos(*)')
+      .eq('usuario_id', usuarioId);
+    if (error) throw error;
+    return data;
   },
 
   // --- PARKING ---

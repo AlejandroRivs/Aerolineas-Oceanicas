@@ -233,6 +233,17 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
     ...vuelos.map(v => v.destino_pais).filter(Boolean)
   ]));
 
+  const formatFecha = (fechaStr) => {
+    if (!fechaStr) return 'No especificada';
+    try {
+      const d = new Date(fechaStr);
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    } catch (e) {
+      return fechaStr;
+    }
+  };
+
   const renderVuelosCards = (vuelosList, isFloating = false) => (
     <div className={`grid grid-cols-1 ${isFloating ? '' : 'md:grid-cols-2 lg:grid-cols-3'} gap-6 overflow-y-auto pr-2 w-full h-full p-4`}>
       {vuelosList.map((vuelo, index) => (
@@ -248,6 +259,18 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
                   <span className="text-sm font-bold">{vuelo.ciudad_destino}</span>
                 </div>
                 <p className="text-xs text-slate-500 font-medium mt-1">{vuelo.pais_destino} • <span className="italic">{vuelo.categoria_gustos}</span></p>
+                <div className="mt-2 space-y-0.5 text-[11px] text-slate-500">
+                  <div className="flex items-center space-x-1">
+                    <span className="font-semibold text-slate-400">Salida:</span>
+                    <span className="font-bold text-slate-700">{formatFecha(vuelo.fecha_salida)}</span>
+                  </div>
+                  {vuelo.fecha_llegada && (
+                    <div className="flex items-center space-x-1">
+                      <span className="font-semibold text-slate-400">Regreso:</span>
+                      <span className="font-bold text-slate-700">{formatFecha(vuelo.fecha_llegada)}</span>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="text-right">
                 <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Precio</span>
