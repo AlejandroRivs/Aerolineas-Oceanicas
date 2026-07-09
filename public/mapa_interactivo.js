@@ -353,8 +353,9 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
               <span className="block text-[10px] uppercase font-black text-slate-500 tracking-wider">Sugerencias de Flexibilidad</span>
               <div className="flex flex-col space-y-2">
                 <button 
-                  onClick={() => setPresupuesto(p => p + 500)}
-                  className="w-full py-2 bg-white hover:bg-slate-100 text-[#162b4e] font-bold rounded-xl text-xs transition border border-slate-200 text-left px-4 flex justify-between"
+                  onClick={() => setPresupuesto(p => Math.min(userBalance || 5000, p + 500))}
+                  disabled={presupuesto >= (userBalance || 5000)}
+                  className="w-full py-2 bg-white hover:bg-slate-100 disabled:opacity-50 disabled:hover:bg-white text-[#162b4e] font-bold rounded-xl text-xs transition border border-slate-200 text-left px-4 flex justify-between"
                 >
                   <span>Aumentar presupuesto</span>
                   <span className="text-emerald-600">+500 MO</span>
