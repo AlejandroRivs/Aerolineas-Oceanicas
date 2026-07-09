@@ -7,7 +7,7 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
   const [presupuesto, setPresupuesto] = useState(userBalance || 5000);
   const [gusto, setGusto] = useState('Todos');
   const [diasDisponibles, setDiasDisponibles] = useState(3);
-  const [diaSalida, setDiaSalida] = useState('2026-07-08');
+  const [diaSalida, setDiaSalida] = useState('2026-07-09');
   const [vuelosFiltrados, setVuelosFiltrados] = useState([]);
   const [paisSeleccionado, setPaisSeleccionado] = useState(null);
   const [paisHover, setPaisHover] = useState(null);
@@ -480,11 +480,11 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-1.5">Día planificado de salida</label>
                   <div className="grid grid-cols-5 gap-1 bg-blue-950 p-1 rounded-xl border border-blue-900">
                     {[
-                      { label: 'Mié 8', value: '2026-07-08' },
                       { label: 'Jue 9', value: '2026-07-09' },
                       { label: 'Vie 10', value: '2026-07-10' },
                       { label: 'Sáb 11', value: '2026-07-11' },
-                      { label: 'Dom 12', value: '2026-07-12' }
+                      { label: 'Dom 12', value: '2026-07-12' },
+                      { label: 'Lun 13', value: '2026-07-13' }
                     ].map(day => (
                       <button
                         key={day.value}
