@@ -720,8 +720,8 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
 
               {/* VENTANA FLOTANTE PARA PAÍS SELECCIONADO EN EL MAPA */}
               {paisSeleccionado && (
-                <div className="absolute inset-0 z-30 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-                  <div className="bg-white w-full max-w-4xl h-[95%] rounded-2xl p-6 shadow-2xl relative overflow-hidden flex flex-col">
+                <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+                  <div className="bg-white w-full max-w-4xl h-[85%] rounded-3xl p-8 shadow-2xl relative overflow-hidden flex flex-col">
                     <button 
                       onClick={() => setPaisSeleccionado(null)}
                       className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center transition-colors"
