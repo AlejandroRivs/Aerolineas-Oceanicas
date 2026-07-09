@@ -32,8 +32,8 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
   const [origenInteligente, setOrigenInteligente] = useState('Guatemala');
   const [origenGeneral, setOrigenGeneral] = useState('Todos');
   const [destinoGeneral, setDestinoGeneral] = useState('Todos');
-  const [fechaSalidaGeneral, setFechaSalidaGeneral] = useState('');
-  const [fechaLlegadaGeneral, setFechaLlegadaGeneral] = useState('');
+  const [fechaSalidaGeneral, setFechaSalidaGeneral] = useState('2026-07-09');
+  const [fechaLlegadaGeneral, setFechaLlegadaGeneral] = useState('2026-07-10');
 
   useEffect(() => {
     if (userBalance !== undefined) {
@@ -282,11 +282,10 @@ window.MapaInteractivo = function MapaInteractivo({ userBalance, vuelos, handleB
 
   // Obtener lugares de origen únicos de los vuelos
   const origenesDisponibles = Array.from(new Set(vuelos.map(v => v.origen).filter(Boolean)));
-  // Obtener destinos únicos de los vuelos
-  const destinosDisponibles = Array.from(new Set([
-    ...vuelos.map(v => v.destino_ciudad).filter(Boolean),
-    ...vuelos.map(v => v.destino_pais).filter(Boolean)
-  ]));
+  // Obtener destinos únicos de los vuelos (solo nombres de países)
+  const destinosDisponibles = Array.from(new Set(
+    vuelos.map(v => v.destino_pais).filter(Boolean)
+  ));
 
   const formatFecha = (fechaStr) => {
     if (!fechaStr) return 'No especificada';
